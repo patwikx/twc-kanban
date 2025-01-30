@@ -1,0 +1,488 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User model (extends NextAuth)
+model User {
+  id            String    @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String    @unique
+  password      String
+  contactNo     String?
+  role          UserRole  @default(ADMIN)
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  createdProperties   Property[]           @relation("CreatedBy")
+  assignedMaintenance MaintenanceRequest[] @relation("AssignedTo")
+  uploadedDocuments   Document[]           @relation("UploadedBy")
+  tenant              Tenant?
+
+  // New relations
+  auditLogs     AuditLog[]
+  notifications Notification[]
+}
+
+// NextAuth required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Property Management Models
+model Property {
+  id              String       @id @default(cuid())
+  propertyCode    String       @unique
+  propertyName    String
+  titleNo         String
+  lotNo           String
+  registeredOwner String
+  leasableArea    Decimal      @db.Decimal(12, 2)
+  address         String
+  propertyType    PropertyType
+  totalUnits      Int?         @default(0)
+  createdById     String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  createdBy     User              @relation("CreatedBy", fields: [createdById], references: [id])
+  units         Unit[]
+  documents     Document[]
+  propertyTaxes PropertyTax[]
+  utilities     PropertyUtility[]
+}
+
+model PropertyTax {
+  id         String    @id @default(cuid())
+  propertyId String
+  taxYear    Int
+  TaxDecNo   String
+  taxAmount  Decimal   @db.Decimal(12, 2)
+  dueDate    DateTime
+  isPaid     Boolean   @default(false)
+  paidDate   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Unit {
+  id            String     @id @default(cuid())
+  propertyId    String
+  unitNumber    String     @unique
+  unitArea      Decimal    @db.Decimal(12, 2)
+  unitRate      Decimal    @db.Decimal(10, 2)
+  rentAmount    Decimal    @db.Decimal(10, 2)
+  isFirstFloor  Boolean    @default(false)
+  isSecondFloor Boolean    @default(false)
+  isThirdFloor  Boolean    @default(false)
+  isRoofTop     Boolean    @default(false)
+  isMezzanine   Boolean    @default(false)
+  status        UnitStatus
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  property            Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  leases              Lease[]
+  maintenanceRequests MaintenanceRequest[]
+  documents           Document[]
+  unitTaxes           UnitTax[]
+  utilityAccounts     UnitUtilityAccount[]
+
+  @@unique([propertyId, unitNumber])
+}
+
+model UnitTax {
+  id        String    @id @default(cuid())
+  unitId    String
+  taxYear   Int
+  taxDecNo  String
+  taxAmount Decimal   @db.Decimal(12, 2)
+  dueDate   DateTime
+  isPaid    Boolean   @default(false)
+  paidDate  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+}
+
+model PropertyUtility {
+  id            String      @id @default(cuid())
+  propertyId    String
+  utilityType   UtilityType
+  provider      String
+  accountNumber String
+  meterNumber   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  property Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  bills    UtilityBill[]
+}
+
+model UnitUtilityAccount {
+  id            String      @id @default(cuid())
+  unitId        String
+  utilityType   UtilityType
+  accountNumber String
+  meterNumber   String?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  unit  Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  bills UtilityBill[]
+}
+
+model UtilityBill {
+  id                   String    @id @default(cuid())
+  propertyUtilityId    String?
+  unitUtilityAccountId String?
+  billingPeriodStart   DateTime
+  billingPeriodEnd     DateTime
+  dueDate              DateTime
+  amount               Decimal   @db.Decimal(10, 2)
+  consumption          Decimal?  @db.Decimal(10, 2)
+  isPaid               Boolean   @default(false)
+  paidDate             DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  propertyUtility    PropertyUtility?    @relation(fields: [propertyUtilityId], references: [id])
+  unitUtilityAccount UnitUtilityAccount? @relation(fields: [unitUtilityAccountId], references: [id])
+}
+
+model Tenant {
+  id                    String       @id @default(cuid())
+  userId                String?      @unique
+  bpCode                String       @unique
+  firstName             String
+  lastName              String
+  email                 String
+  phone                 String
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  company               String
+  status                TenantStatus
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  createdById           String?
+
+  // Relations
+  user                User?                @relation(fields: [userId], references: [id])
+  leases              Lease[]
+  maintenanceRequests MaintenanceRequest[]
+  documents           Document[]
+}
+
+model Lease {
+  id                String      @id @default(cuid())
+  unitId            String
+  tenantId          String
+  startDate         DateTime
+  endDate           DateTime
+  rentAmount        Decimal     @db.Decimal(10, 2)
+  securityDeposit   Decimal     @db.Decimal(10, 2)
+  status            LeaseStatus @default(PENDING)
+  terminationDate   DateTime?
+  terminationReason String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  unit     Unit      @relation(fields: [unitId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  payments Payment[]
+}
+
+model MaintenanceRequest {
+  id           String              @id @default(cuid())
+  unitId       String
+  tenantId     String
+  category     MaintenanceCategory
+  priority     Priority
+  description  String
+  status       MaintenanceStatus
+  assignedToId String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  completedAt  DateTime?
+
+  // Relations
+  unit       Unit   @relation(fields: [unitId], references: [id])
+  tenant     Tenant @relation(fields: [tenantId], references: [id])
+  assignedTo User?  @relation("AssignedTo", fields: [assignedToId], references: [id])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  leaseId       String
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentType   PaymentType
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus
+  paymentDate   DateTime
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  lease Lease @relation(fields: [leaseId], references: [id])
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  documentType DocumentType
+  fileUrl      String
+  propertyId   String?
+  unitId       String?
+  tenantId     String?
+  uploadedById String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  property   Property? @relation(fields: [propertyId], references: [id])
+  unit       Unit?     @relation(fields: [unitId], references: [id])
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id])
+  uploadedBy User      @relation("UploadedBy", fields: [uploadedById], references: [id])
+}
+
+// Audit Log System
+model AuditLog {
+  id         String      @id @default(cuid())
+  entityId   String // ID of the affected entity
+  entityType EntityType // Type of entity (Property, Unit, Lease, etc.)
+  action     AuditAction
+  userId     String
+  changes    Json? // Store changes in JSON format
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json? // Additional contextual data
+  createdAt  DateTime    @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+}
+
+// Notification System
+model Notification {
+  id         String               @id @default(cuid())
+  userId     String
+  title      String
+  message    String
+  type       NotificationType
+  priority   NotificationPriority
+  isRead     Boolean              @default(false)
+  readAt     DateTime?
+  actionUrl  String? // Optional URL for action
+  entityId   String? // Optional related entity ID
+  entityType EntityType? // Optional related entity type
+  createdAt  DateTime             @default(now())
+  expiresAt  DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+}
+
+// Existing Enums
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  TENANT
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED
+}
+
+enum UnitStatus {
+  VACANT
+  OCCUPIED
+  MAINTENANCE
+  RESERVED
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum LeaseStatus {
+  ACTIVE
+  PENDING
+  TERMINATED
+  EXPIRED
+}
+
+enum MaintenanceCategory {
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  APPLIANCE
+  STRUCTURAL
+  OTHER
+}
+
+enum Priority {
+  EMERGENCY
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum MaintenanceStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentType {
+  RENT
+  SECURITY_DEPOSIT
+  FEE
+  UTILITY
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  BANK_TRANSFER
+  CHECK
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum DocumentType {
+  LEASE
+  CONTRACT
+  INVOICE
+  MAINTENANCE
+  OTHER
+}
+
+// New Enum for Utilities
+enum UtilityType {
+  WATER
+  ELECTRICITY
+  GAS
+  INTERNET
+  CABLE
+  TRASH
+  SEWER
+  OTHER
+}
+
+// New Enums
+enum EntityType {
+  USER
+  PROPERTY
+  UNIT
+  LEASE
+  TENANT
+  MAINTENANCE_REQUEST
+  PAYMENT
+  DOCUMENT
+  UTILITY_BILL
+  PROPERTY_TAX
+  UNIT_TAX
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PASSWORD_CHANGE
+  EMAIL_CHANGE
+  PERMISSION_CHANGE
+  STATUS_CHANGE
+  ASSIGNMENT
+  PAYMENT_PROCESSED
+  DOCUMENT_UPLOAD
+}
+
+enum NotificationType {
+  SYSTEM
+  MAINTENANCE
+  LEASE
+  PAYMENT
+  DOCUMENT
+  SECURITY
+  UTILITY
+  TAX
+  PROPERTY
+  UNIT
+  TENANT
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}

@@ -1,0 +1,86 @@
+import { 
+  Property, 
+  Unit, 
+  Document, 
+  PropertyUtility, 
+  PropertyTax,
+  UnitTax,
+  UtilityBill,
+  UnitUtilityAccount,
+  Tenant,
+  Lease,
+  MaintenanceRequest,
+  Payment,
+  User,
+  AuditLog,
+  Notification
+} from "@prisma/client";
+
+export type PropertyWithRelations = Property & {
+  units: Unit[];
+  documents: Document[];
+  utilities: PropertyUtility[];
+  propertyTaxes: PropertyTax[];
+};
+
+export type UnitWithRelations = Unit & {
+  property: Property;
+  leases: (Lease & {
+    tenant: Tenant;
+  })[];
+  documents: Document[];
+  unitTaxes: UnitTax[];
+  utilityAccounts: (UnitUtilityAccount & {
+    bills: UtilityBill[];
+  })[];
+  maintenanceRequests: MaintenanceRequest[];
+};
+
+export type TenantWithRelations = Tenant & {
+  leases: LeaseWithRelations[];
+  maintenanceRequests: (MaintenanceRequest & {
+    unit: Unit & {
+      property: Property;
+    };
+  })[];
+  documents: Document[];
+};
+
+export type LeaseWithRelations = Lease & {
+  unit: Unit & {
+    property: Property;
+  };
+  tenant: Tenant;
+  payments: Payment[];
+};
+
+export type MaintenanceRequestWithRelations = MaintenanceRequest & {
+  unit: Unit & {
+    property: Property;
+  };
+  tenant: Tenant;
+  assignedTo: User | null;
+};
+
+export type DocumentWithRelations = Document & {
+  property: Property | null;
+  unit: (Unit & {
+    property: Property;
+  }) | null;
+  tenant: Tenant | null;
+  uploadedBy: User;
+};
+
+export type UtilityBillWithRelations = UtilityBill & {
+  propertyUtility: PropertyUtility | null;
+  unitUtilityAccount: UnitUtilityAccount | null;
+};
+
+export type UserWithRelations = User & {
+  createdProperties: Property[];
+  assignedMaintenance: MaintenanceRequest[];
+  uploadedDocuments: Document[];
+  tenant: Tenant | null;
+  auditLogs: AuditLog[];
+  notifications: Notification[];
+};
