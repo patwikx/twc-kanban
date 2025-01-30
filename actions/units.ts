@@ -28,7 +28,13 @@ export async function createUnit(formData: FormData) {
         unitArea: parseFloat(data.unitArea as string),
         unitRate: parseFloat(data.unitRate as string),
         rentAmount: parseFloat(data.rentAmount as string),
-        status: data.status as any,
+        status: data.status as UnitStatus,
+        // Add new floor-related fields
+        isFirstFloor: data.isFirstFloor === 'true',
+        isSecondFloor: data.isSecondFloor === 'true',
+        isThirdFloor: data.isThirdFloor === 'true',
+        isRoofTop: data.isRoofTop === 'true',
+        isMezzanine: data.isMezzanine === 'true',
       },
       include: {
         property: true,
@@ -87,7 +93,13 @@ export async function updateUnit(id: string, formData: FormData) {
         unitArea: parseFloat(data.unitArea as string),
         unitRate: parseFloat(data.unitRate as string),
         rentAmount: parseFloat(data.rentAmount as string),
-        status: data.status as any,
+        status: data.status as UnitStatus,
+        // Add new floor-related fields
+        isFirstFloor: data.isFirstFloor === 'true',
+        isSecondFloor: data.isSecondFloor === 'true',
+        isThirdFloor: data.isThirdFloor === 'true',
+        isRoofTop: data.isRoofTop === 'true',
+        isMezzanine: data.isMezzanine === 'true',
       },
       include: {
         property: true,
@@ -199,59 +211,58 @@ export async function getAvailableUnits() {
 export async function bulkDeleteUnits(ids: string[]) {
   const session = await auth();
   if (!session?.user?.id) {
-  throw new AppError("Unauthorized", 401);
+    throw new AppError("Unauthorized", 401);
   }
   
   try {
-  const units = await prisma.unit.findMany({
-  where: {
-  id: {
-  in: ids,
-  },
-  },
-  include: {
-  property: true,
-  },
-  });
-  
-  
-  await prisma.unit.deleteMany({
-    where: {
-      id: {
-        in: ids,
+    const units = await prisma.unit.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
       },
-    },
-  });
-  
-  await Promise.all(
-    ids.map((id) =>
-      createAuditLog({
-        entityId: id,
-        entityType: EntityType.UNIT,
-        action: "DELETE",
-      })
-    )
-  );
-  
-  await Promise.all(
-    units.map((unit) =>
-      createNotification({
-        userId: session.user.id,
-        title: "Unit Deleted",
-        message: `Unit ${unit.unitNumber} has been deleted from ${unit.property.propertyName}.`,
-        type: NotificationType.UNIT,
-        entityId: unit.id,
-        entityType: EntityType.UNIT,
-      })
-    )
-  );
-  
-  revalidatePath("/units");
+      include: {
+        property: true,
+      },
+    });
+    
+    await prisma.unit.deleteMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+    });
+    
+    await Promise.all(
+      ids.map((id) =>
+        createAuditLog({
+          entityId: id,
+          entityType: EntityType.UNIT,
+          action: "DELETE",
+        })
+      )
+    );
+    
+    await Promise.all(
+      units.map((unit) =>
+        createNotification({
+          userId: session.user.id,
+          title: "Unit Deleted",
+          message: `Unit ${unit.unitNumber} has been deleted from ${unit.property.propertyName}.`,
+          type: NotificationType.UNIT,
+          entityId: unit.id,
+          entityType: EntityType.UNIT,
+        })
+      )
+    );
+    
+    revalidatePath("/units");
   } catch (error) {
-  throw new AppError(
-  "Failed to delete units",
-  500,
-  "UNIT_BULK_DELETE_ERROR"
-  );
+    throw new AppError(
+      "Failed to delete units",
+      500,
+      "UNIT_BULK_DELETE_ERROR"
+    );
   }
-  }
+}

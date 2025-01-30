@@ -27,9 +27,9 @@ import { exportToCSV } from "@/lib/utils/export-to-csv";
 
 
 const statusColorMap: Record<UnitStatus, string> = {
-  VACANT: "bg-yellow-500",
-  OCCUPIED: "bg-green-500",
-  MAINTENANCE: "bg-blue-500",
+  VACANT: "bg-green-500",
+  OCCUPIED: "bg-blue-500",
+  MAINTENANCE: "bg-red-500",
   RESERVED: "bg-purple-500",
 };
 
@@ -45,11 +45,16 @@ export async function UnitsDataTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Unit Number</TableHead>
+              <TableHead>Space Number</TableHead>
               <TableHead>Property</TableHead>
               <TableHead>Area (sqm)</TableHead>
               <TableHead>Rate</TableHead>
               <TableHead>Rent Amount</TableHead>
+              <TableHead>First Floor</TableHead>
+                    <TableHead>Second Floor</TableHead>
+                    <TableHead>Third Floor</TableHead>
+                    <TableHead>Rooftop Floor</TableHead>
+                    <TableHead>Mezzanine</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -62,6 +67,31 @@ export async function UnitsDataTable() {
                 <TableCell>{unit.unitArea.toString()}</TableCell>
                 <TableCell>{formatCurrency(Number(unit.unitRate))}</TableCell>
                 <TableCell>{formatCurrency(Number(unit.rentAmount))}</TableCell>
+                <TableCell>
+  <Badge variant={unit.isFirstFloor ? "default" : "secondary"} className={unit.isFirstFloor ? "bg-green-500" : ""}>
+    {unit.isFirstFloor ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isSecondFloor ? "default" : "secondary"} className={unit.isSecondFloor ? "bg-green-500" : ""}>
+    {unit.isSecondFloor ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isThirdFloor ? "default" : "secondary"} className={unit.isThirdFloor ? "bg-green-500" : ""}>
+    {unit.isThirdFloor ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isRoofTop ? "default" : "secondary"} className={unit.isRoofTop ? "bg-green-500" : ""}>
+    {unit.isRoofTop ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isMezzanine ? "default" : "secondary"} className={unit.isMezzanine ? "bg-green-500" : ""}>
+    {unit.isMezzanine ? "Yes" : "No"}
+  </Badge>
+</TableCell>
                 <TableCell>
                   <Badge
                     variant="secondary"
@@ -89,12 +119,12 @@ export async function UnitsDataTable() {
                       <Link href={`/dashboard/spaces/${unit.id}/edit`}>
                         <DropdownMenuItem>
                           <Edit className="mr-2 h-4 w-4" />
-                          Edit Unit
+                          Edit Space
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuItem className="text-destructive">
                         <Trash className="mr-2 h-4 w-4" />
-                        Delete Unit
+                        Delete Space
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

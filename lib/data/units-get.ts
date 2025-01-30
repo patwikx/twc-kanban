@@ -111,20 +111,26 @@ export async function getUnitDetails(id: string) {
       },
       leases: {
         include: {
-          tenant: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
-          },
+          tenant: true,
         },
         orderBy: {
           startDate: 'desc',
         },
       },
+      unitTaxes: {
+        orderBy: {
+          taxYear: 'desc',
+        },
+      },
+      utilityAccounts: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
     },
   });
 }
+
 
 export async function getUnitDocuments(unitId: string) {
   return await prisma.document.findMany({

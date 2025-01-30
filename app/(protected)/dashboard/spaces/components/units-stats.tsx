@@ -14,7 +14,7 @@ import { getUnitStats } from "@/lib/data/units-get";
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Units</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Spaces</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -22,7 +22,7 @@ import { getUnitStats } from "@/lib/data/units-get";
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Occupied Units</CardTitle>
+            <CardTitle className="text-sm font-medium">Occupied Space</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.occupied}</div>
@@ -33,7 +33,7 @@ import { getUnitStats } from "@/lib/data/units-get";
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vacant Units</CardTitle>
+            <CardTitle className="text-sm font-medium">Vacant Spaces</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.vacant}</div>

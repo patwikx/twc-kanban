@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Trash, Plus, Download, FileText, Building2 } from "lucide-react";
+import { Edit, Trash, Plus, Download, FileText, Building2, Droplets, Power, Wifi, Eye, Receipt, Calendar, MapPin, User } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PropertyType } from "@prisma/client";
+import { PropertyType, UtilityType } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAsync } from "@/hooks/use-async";
@@ -34,6 +34,11 @@ import { deleteProperty, updateProperty } from "@/actions/property";
 import { AddUnitDialog } from "./add-unit-dialog";
 import { AddUtilityDialog } from "./add-utility-dialog";
 import { AddPropertyTaxDialog } from "./add-property-tax-dialog";
+import { toast } from "sonner";
+import { updatePropertyTaxStatus, updateUtilityStatus } from "@/actions/property-tax";
+import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
+import Link from "next/link";
+import { format } from "date-fns";
 
 
 interface PropertyDetailsProps {
@@ -65,6 +70,28 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
       successMessage: "Property updated successfully",
     }
   );
+
+  const handleTaxStatusChange = async (taxId: string, currentStatus: boolean) => {
+    try {
+      await updatePropertyTaxStatus(taxId, !currentStatus);
+      toast.success("Tax status updated successfully");
+      router.refresh();
+    } catch (error) {
+      toast.error("Failed to update tax status");
+    }
+  };
+
+  const { execute: handleUtilityStatusChange } = useAsync(
+    async (id: string, currentStatus: boolean) => {
+      try {
+        await updateUtilityStatus(id, !currentStatus);
+        toast.success("Utility status updated successfully");
+      } catch (error) {
+        toast.error("Failed to update utility status");
+      }
+    }
+  );
+
 
   const occupancyRate = property.units.length > 0
     ? (property.units.filter(unit => unit.status === "OCCUPIED").length / property.units.length) * 100
@@ -223,7 +250,7 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="units">Spaces ({property.units.length})</TabsTrigger>
           <TabsTrigger value="utilities">Utilities ({property.utilities.length})</TabsTrigger>
-          <TabsTrigger value="taxes">Property Taxes</TabsTrigger>
+          <TabsTrigger value="taxes">Real Property Taxes ({property.propertyTaxes.length})</TabsTrigger>
           <TabsTrigger value="documents">Documents ({property.documents.length})</TabsTrigger>
         </TabsList>
 
@@ -279,44 +306,91 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Property Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Title No.</TableCell>
-                    <TableCell>{property.titleNo}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Lot No.</TableCell>
-                    <TableCell>{property.lotNo}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Registered Owner</TableCell>
-                    <TableCell>{property.registeredOwner}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Address</TableCell>
-                    <TableCell>{property.address}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Property Type</TableCell>
-                    <TableCell className="capitalize">
-                      {property.propertyType.toLowerCase()}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Created At</TableCell>
-                    <TableCell>{formatDate(property.createdAt)}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+  <CardHeader className="border-b">
+    <CardTitle className="flex items-center gap-2">
+      <Building2 className="h-5 w-5 text-primary" />
+      Property Details
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="p-6">
+    <div className="grid gap-6">
+      {/* Legal Information */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Legal Information
+        </h4>
+        <div className="grid gap-3">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">{property.titleNo || "—"}</p>
+              <p className="text-xs text-muted-foreground">Title Number</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">{property.lotNo || "—"}</p>
+              <p className="text-xs text-muted-foreground">Lot Number</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <User className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">{property.registeredOwner}</p>
+              <p className="text-xs text-muted-foreground">Registered Owner</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Property Information */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Property Information
+        </h4>
+        <div className="grid gap-3">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+          <FileText className="h-5 w-5 text-muted-foreground" />
+          <div>
+          <p className="text-sm font-medium">{property.propertyCode}</p>
+                <p className="text-xs text-muted-foreground">Property Code</p>
+    
+          </div>
+
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <MapPin className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">{property.address}</p>
+              <p className="text-xs text-muted-foreground">Address</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">
+                <Badge variant="outline" className="font-normal">
+                  {property.propertyType.toUpperCase()}
+                </Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">Property Type</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <Calendar className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">{formatDate(property.createdAt)}</p>
+              <p className="text-xs text-muted-foreground">
+                Date Created
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </CardContent>
+</Card>
         </TabsContent>
 
         <TabsContent value="units" className="space-y-4">
@@ -333,6 +407,11 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
                     <TableHead>Area (sqm)</TableHead>
                     <TableHead>Rate</TableHead>
                     <TableHead>Rent Amount</TableHead>
+                    <TableHead>Ground Floor</TableHead>
+                    <TableHead>Second Floor</TableHead>
+                    <TableHead>Third Floor</TableHead>
+                    <TableHead>Rooftop Floor</TableHead>
+                    <TableHead>Mezzanine</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -345,6 +424,31 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
                       <TableCell>{formatCurrency(Number(unit.unitRate))}</TableCell>
                       <TableCell>{formatCurrency(Number(unit.rentAmount))}</TableCell>
                       <TableCell>
+  <Badge variant={unit.isFirstFloor ? "default" : "secondary"} className={unit.isFirstFloor ? "bg-green-500" : ""}>
+    {unit.isFirstFloor ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isSecondFloor ? "default" : "secondary"} className={unit.isSecondFloor ? "bg-green-500" : ""}>
+    {unit.isSecondFloor ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isThirdFloor ? "default" : "secondary"} className={unit.isThirdFloor ? "bg-green-500" : ""}>
+    {unit.isThirdFloor ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isRoofTop ? "default" : "secondary"} className={unit.isRoofTop ? "bg-green-500" : ""}>
+    {unit.isRoofTop ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+<TableCell>
+  <Badge variant={unit.isMezzanine ? "default" : "secondary"} className={unit.isMezzanine ? "bg-green-500" : ""}>
+    {unit.isMezzanine ? "Yes" : "No"}
+  </Badge>
+</TableCell>
+                      <TableCell>
                         <Badge 
                           variant={unit.status === "OCCUPIED" ? "default" : "secondary"}
                         >
@@ -352,9 +456,12 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <Building2 className="h-4 w-4" />
+                      <Link href={`/dashboard/spaces/${unit.id}`}>
+                        <Button variant='outline'>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
                         </Button>
+                      </Link>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -364,50 +471,130 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="utilities" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Utilities</h3>
-            <AddUtilityDialog propertyId={property.id} />
+        <TabsContent value="utilities" className="space-y-6">
+  <div className="flex justify-between items-center">
+    <div>
+      <h3 className="text-lg font-semibold">Utility Accounts</h3>
+      <p className="text-sm text-muted-foreground">
+        Manage utility accounts and meters for this property
+      </p>
+    </div>
+    <AddUtilityDialog propertyId={property.id} />
+  </div>
+
+  <div className="grid gap-6 md:grid-cols-3">
+    {Object.values(UtilityType).map((type) => {
+      const account = property.utilities.find(u => u.utilityType === type);
+      return (
+        <div key={type} className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {type === 'WATER' && <Droplets className="h-4 w-4" />}
+              {type === 'ELECTRICITY' && <Power className="h-4 w-4" />}
+              {type === 'OTHERS' && <QuestionMarkCircledIcon className="h-4 w-4" />}
+              <h4 className="font-medium">{type.charAt(0) + type.slice(1).toLowerCase()}</h4>
+            </div>
+            <Badge variant={account?.isActive ? "default" : "secondary"}>
+              {account?.isActive ? "Active" : "Inactive"}
+            </Badge>
           </div>
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Account Number</TableHead>
-                    <TableHead>Meter Number</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {property.utilities.map((utility) => (
-                    <TableRow key={utility.id}>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {utility.utilityType.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{utility.provider}</TableCell>
-                      <TableCell>{utility.accountNumber}</TableCell>
-                      <TableCell>{utility.meterNumber || "N/A"}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          {account ? (
+            <div className="space-y-2">
+              <div>
+                <p className="text-sm text-muted-foreground">Provider</p>
+                <p className="font-medium">{account.provider}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Account Number</p>
+                <p className="font-mono">{account.accountNumber}</p>
+              </div>
+              {account.meterNumber && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Meter Number</p>
+                  <p className="font-mono">{account.meterNumber}</p>
+                </div>
+              )}
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleUtilityStatusChange(account.id, account.isActive)}
+                >
+                  Mark as {account.isActive ? "Inactive" : "Active"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">No account configured</p>
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  <div className="rounded-md border">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Type</TableHead>
+          <TableHead>Provider</TableHead>
+          <TableHead>Account Number</TableHead>
+          <TableHead>Meter Number</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {property.utilities.map((utility) => (
+          <TableRow key={utility.id}>
+            <TableCell>
+              <div className="flex items-center gap-2">
+                {utility.utilityType === 'WATER' && <Droplets className="h-4 w-4" />}
+                {utility.utilityType === 'ELECTRICITY' && <Power className="h-4 w-4" />}
+                {utility.utilityType === UtilityType.OTHERS && <QuestionMarkCircledIcon className="h-4 w-4" />}
+                <span>{utility.utilityType}</span>
+              </div>
+            </TableCell>
+            <TableCell>{utility.provider}</TableCell>
+            <TableCell className="font-mono">{utility.accountNumber}</TableCell>
+            <TableCell className="font-mono">{utility.meterNumber || "-"}</TableCell>
+            <TableCell>
+              <Badge variant={utility.isActive ? "default" : "secondary"}>
+                {utility.isActive ? "Active" : "Inactive"}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleUtilityStatusChange(utility.id, utility.isActive)}
+              >
+                {utility.isActive ? "Deactivate" : "Activate"}
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+        {property.utilities.length === 0 && (
+          <TableRow>
+            <TableCell
+              colSpan={6}
+              className="text-center text-muted-foreground h-24"
+            >
+              No utility accounts found
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  </div>
+</TabsContent>
 
         <TabsContent value="taxes" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Property Taxes</h3>
+            <h3 className="text-lg font-semibold">Real Property Taxes</h3>
             <AddPropertyTaxDialog propertyId={property.id} />
           </div>
           <Card>
@@ -420,31 +607,49 @@ export function PropertyDetails({ property }: PropertyDetailsProps) {
                     <TableHead>Tax Amount</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Payment Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {property.propertyTaxes?.map((tax) => (
-                    <TableRow key={tax.id}>
-                      <TableCell>{tax.taxYear}</TableCell>
-                      <TableCell>{tax.TaxDecNo.toString()}</TableCell>
-                      <TableCell>{formatCurrency(Number(tax.taxAmount))}</TableCell>
-                      <TableCell>{formatDate(tax.dueDate)}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={tax.isPaid ? "default" : "secondary"}
-                        >
-                          {tax.isPaid ? "Paid" : "Unpaid"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+ {/* In the taxes TabsContent, update the TableBody */}
+ <TableBody>
+    {property.propertyTaxes?.map((tax) => (
+      <TableRow key={tax.id}>
+        <TableCell>{tax.taxYear}</TableCell>
+        <TableCell>{tax.TaxDecNo.toString()}</TableCell>
+        <TableCell>{formatCurrency(Number(tax.taxAmount))}</TableCell>
+        <TableCell>{formatDate(tax.dueDate)}</TableCell>
+        <TableCell>
+          <Badge 
+            variant={tax.isPaid ? "default" : "secondary"}
+            className="cursor-pointer hover:opacity-80"
+            onClick={() => handleTaxStatusChange(tax.id, tax.isPaid)}
+          >
+            {tax.isPaid ? "Paid" : "Unpaid"}
+          </Badge>
+        </TableCell>
+        <TableCell>
+                  {tax.paidDate ? (
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                      {format(tax.paidDate, "PPP")}
+                    </div>
+                  ) : (
+                    "-"
+                  )}
+                </TableCell>
+        <TableCell className="text-right">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleTaxStatusChange(tax.id, tax.isPaid)}
+          >
+            {tax.isPaid ? "Mark as Unpaid" : "Mark as Paid"}
+          </Button>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
               </Table>
             </CardContent>
           </Card>

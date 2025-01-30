@@ -70,3 +70,12 @@ export const RegisterUserSchema = z.object({
   contactNo: z.string().optional(),
   role: z.enum([UserRole.ADMIN, UserRole.STAFF, UserRole.MANAGER, UserRole.TENANT]).optional(),
 });
+
+export const unitTaxSchema = z.object({
+  taxYear: z.number().min(2000, "Invalid tax year"),
+  taxDecNo: z.string().min(1, "Tax declaration number is required"),
+  taxAmount: z.string().or(z.number()).pipe(
+    z.coerce.number().positive("Amount must be greater than 0")
+  ),
+  dueDate: z.string().min(1, "Due date is required"),
+});

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { CalendarIcon, Plus } from "lucide-react";
 import { useAsync } from "@/hooks/use-async";
 import { createPropertyTax } from "@/actions/property-tax";
 
@@ -29,7 +38,9 @@ const propertyTaxFormSchema = z.object({
   taxYear: z.number().min(2000, "Valid tax year is required"),
   taxDecNo: z.string().min(1, "Tax declaration number is required"),
   taxAmount: z.number().positive("Tax amount must be positive"),
-  dueDate: z.string().min(1, "Due date is required"),
+  dueDate: z.date({
+    required_error: "Due date is required",
+  }),
 });
 
 type PropertyTaxFormValues = z.infer<typeof propertyTaxFormSchema>;
@@ -49,20 +60,21 @@ export function AddPropertyTaxDialog({ propertyId }: AddPropertyTaxDialogProps) 
 
   const { execute: submitForm, loading: isSubmitting } = useAsync(
     async (data: PropertyTaxFormValues) => {
-      const formData = new FormData();
-      formData.append("propertyId", propertyId);
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          formData.append(key, value.toString());
-        }
-      });
+      try {
+        const formData = new FormData();
+        formData.append("propertyId", propertyId);
+        formData.append("taxYear", data.taxYear.toString());
+        formData.append("taxDecNo", data.taxDecNo);
+        formData.append("taxAmount", data.taxAmount.toString());
+        formData.append("dueDate", data.dueDate.toISOString());
 
-      await createPropertyTax(formData);
-      setOpen(false);
-      form.reset();
-    },
-    {
-      successMessage: "Property tax record has been added successfully.",
+        await createPropertyTax(formData);
+        toast.success("Property tax record has been added successfully");
+        setOpen(false);
+        form.reset();
+      } catch (error) {
+        toast.error("Failed to add property tax record");
+      }
     }
   );
 
@@ -135,11 +147,39 @@ export function AddPropertyTaxDialog({ propertyId }: AddPropertyTaxDialogProps) 
               control={form.control}
               name="dueDate"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Due Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}

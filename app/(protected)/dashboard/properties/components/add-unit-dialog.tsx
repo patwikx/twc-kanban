@@ -32,22 +32,55 @@ import { Plus } from "lucide-react";
 import { useAsync } from "@/hooks/use-async";
 import { unitSchema } from "@/lib/utils/validation";
 import { createUnit } from "@/actions/units";
+import { Checkbox } from "@/components/ui/checkbox";
 import z from "zod";
 
-type UnitFormValues = z.infer<typeof unitSchema>;
+const extendedUnitSchema = unitSchema.extend({
+  isFirstFloor: z.boolean().default(false),
+  isSecondFloor: z.boolean().default(false),
+  isThirdFloor: z.boolean().default(false),
+  isRoofTop: z.boolean().default(false),
+  isMezzanine: z.boolean().default(false),
+});
+
+type UnitFormValues = z.infer<typeof extendedUnitSchema>;
 
 interface AddUnitDialogProps {
   propertyId: string;
 }
 
+const floorOptions = [
+  { id: "isFirstFloor", label: "First Floor" },
+  { id: "isSecondFloor", label: "Second Floor" },
+  { id: "isThirdFloor", label: "Third Floor" },
+  { id: "isRoofTop", label: "Roof Top" },
+  { id: "isMezzanine", label: "Mezzanine" },
+] as const;
+
 export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
   const [open, setOpen] = useState(false);
   const form = useForm<UnitFormValues>({
-    resolver: zodResolver(unitSchema),
+    resolver: zodResolver(extendedUnitSchema),
     defaultValues: {
       status: UnitStatus.VACANT,
+      isFirstFloor: false,
+      isSecondFloor: false,
+      isThirdFloor: false,
+      isRoofTop: false,
+      isMezzanine: false,
     },
   });
+
+  const handleFloorChange = (fieldName: string, checked: boolean) => {
+    if (!checked) {
+      form.setValue(fieldName as keyof UnitFormValues, false);
+      return;
+    }
+
+    floorOptions.forEach(option => {
+      form.setValue(option.id as keyof UnitFormValues, option.id === fieldName);
+    });
+  };
 
   const { execute: submitForm, loading: isSubmitting } = useAsync(
     async (data: UnitFormValues) => {
@@ -68,7 +101,6 @@ export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
     }
   );
 
-  // Calculate rent amount when area or rate changes
   const calculateRentAmount = (area: number, rate: number) => {
     const rentAmount = area * rate;
     form.setValue("rentAmount", rentAmount);
@@ -79,12 +111,12 @@ export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Add Unit
+          Add Space
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Unit</DialogTitle>
+          <DialogTitle>Add New Space</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(submitForm)} className="space-y-4">
@@ -167,6 +199,33 @@ export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
                 </FormItem>
               )}
             />
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Floor Location</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {floorOptions.map((option) => (
+                  <FormField
+                    key={option.id}
+                    control={form.control}
+                    name={option.id as keyof UnitFormValues}
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value as boolean}
+                            onCheckedChange={(checked) => {
+                              handleFloorChange(option.id, !!checked);
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">{option.label}</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+
             <FormField
               control={form.control}
               name="status"

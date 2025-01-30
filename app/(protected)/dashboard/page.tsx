@@ -8,7 +8,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   DollarSign,
-  Home
+  Home,
+  PartyPopper
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -243,13 +244,6 @@ export default async function DashboardPage() {
       {/* Revenue Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Monthly Revenue"
-          value={`$${revenue.currentMonthRevenue.toLocaleString()}`}
-          icon={DollarSign}
-          trend={revenueChange ? 'up' : 'down'}
-          trendValue={`${revenueChangePercentage}% from last month`}
-        />
-        <StatCard
           title="Outstanding Payments"
           value={`$${revenue.totalOutstandingAmount.toLocaleString()}`}
           icon={AlertTriangle}
@@ -266,6 +260,12 @@ export default async function DashboardPage() {
           value={`${((stats.totalUnits - stats.vacantUnits) / stats.totalUnits * 100).toFixed(1)}%`}
           icon={Home}
           description={`${stats.vacantUnits} vacant units`}
+        />
+        <StatCard
+          title="New Tenants"
+          value={stats.totalTenants}
+          icon={Users}
+          description="New tenants"
         />
       </div>
 
@@ -287,6 +287,13 @@ export default async function DashboardPage() {
           title="Upcoming Renewals"
           value={stats.upcomingLeaseRenewals}
           icon={ClipboardList}
+          description="Next 30 days"
+        />
+
+        <StatCard
+          title="Upcoming Tenant Anniversaries"
+          value={stats.upcomingLeaseRenewals}
+          icon={PartyPopper}
           description="Next 30 days"
         />
       </div>

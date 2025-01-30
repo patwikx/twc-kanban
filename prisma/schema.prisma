@@ -163,6 +163,7 @@ model PropertyUtility {
   meterNumber   String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  isActive      Boolean     @default(false)
 
   // Relations
   property Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -428,12 +429,7 @@ enum DocumentType {
 enum UtilityType {
   WATER
   ELECTRICITY
-  GAS
-  INTERNET
-  CABLE
-  TRASH
-  SEWER
-  OTHER
+  OTHERS
 }
 
 // New Enums

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Building2 } from "lucide-react";
+import { Download, Building2 } from "lucide-react";
 import Link from "next/link";
 import { getProperties } from "@/lib/data/properties";
 import { PropertyListSkeleton } from "./components/property-list-skeleton";

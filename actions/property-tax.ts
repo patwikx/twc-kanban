@@ -148,3 +148,37 @@ export async function deletePropertyTax(id: string) {
     );
   }
 }
+
+export async function updatePropertyTaxStatus(id: string, isPaid: boolean) {
+  const tax = await prisma.propertyTax.update({
+    where: { id },
+    data: {
+      isPaid,
+      paidDate: isPaid ? new Date() : null,
+    },
+  });
+
+  revalidatePath(`/property/${tax.propertyId}`);
+  return tax;
+}
+
+export async function updateUtilityStatus(id: string, isActive: boolean) {
+  const utility = await prisma.propertyUtility.update({
+    where: { id },
+    data: {
+      isActive,
+    },
+  });
+
+  revalidatePath(`/property/${utility.propertyId}`);
+  return utility;
+}
+
+export async function deletePropertyUtility(id: string) {
+  const utility = await prisma.propertyUtility.delete({
+    where: { id },
+  });
+
+  revalidatePath(`/property/${utility.propertyId}`);
+  return utility;
+}

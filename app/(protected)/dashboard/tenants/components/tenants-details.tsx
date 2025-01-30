@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Trash, Plus, Download, FileText, Building2, User, Mail, AlertCircle } from "lucide-react";
+import { Edit, Trash, Plus, Download, FileText, Building2, User, Mail, AlertCircle, Calendar, Phone, ExternalLink } from "lucide-react";
 import { formatDate, formatPhoneNumber, formatCurrency } from "@/lib/utils/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -448,53 +448,119 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Tenant Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Status</TableCell>
-                    <TableCell>
-                      <Badge variant={tenant.status === "ACTIVE" ? "default" : "secondary"}>
-                        {tenant.status.toLowerCase()}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Email</TableCell>
-                    <TableCell>{tenant.email}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Phone</TableCell>
-                    <TableCell>{formatPhoneNumber(tenant.phone)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Company</TableCell>
-                    <TableCell>{tenant.company}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Emergency Contact</TableCell>
-                    <TableCell>
-                      {tenant.emergencyContactName && tenant.emergencyContactPhone ? (
-                        <>
-                          {tenant.emergencyContactName} ({formatPhoneNumber(tenant.emergencyContactPhone)})
-                        </>
-                      ) : (
-                        "Not provided"
-                      )}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Created At</TableCell>
-                    <TableCell>{formatDate(tenant.createdAt)}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <Card className="bg-card">
+      <CardHeader className="border-b">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-2xl flex items-center gap-2">
+              Tenant Information
+
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Comprehensive tenant details and contact information
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Details
+            </Button>
+            <Button>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Full Profile
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="grid gap-6">
+          {/* Basic Information */}
+          <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold">
+                {tenant.firstName} {tenant.lastName}               <Badge 
+                variant={tenant.status === "ACTIVE" ? "default" : "secondary"}
+                className="ml-2 mt-[-10px]"
+              >
+                {tenant.status.toUpperCase()}
+              </Badge>
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                BP Code: <span className="font-mono">{tenant.bpCode}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Contact Details
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{tenant.email}</p>
+                    <p className="text-xs text-muted-foreground">Primary Email</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{formatPhoneNumber(tenant.phone)}</p>
+                    <p className="text-xs text-muted-foreground">Primary Phone</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{tenant.company}</p>
+                    <p className="text-xs text-muted-foreground">Company</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Additional Information
+              </h4>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3 mb-2">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                    <p className="text-sm font-medium">Emergency Contact</p>
+                  </div>
+                  {tenant.emergencyContactName && tenant.emergencyContactPhone ? (
+                    <div className="ml-8 space-y-1">
+                      <p className="text-sm">{tenant.emergencyContactName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatPhoneNumber(tenant.emergencyContactPhone)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="ml-8 text-sm text-muted-foreground">Not provided</p>
+                  )}
+                </div>
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <p className="text-sm font-medium">Account Created</p>
+                  </div>
+                  <p className="ml-8 text-sm text-muted-foreground">
+                    {formatDate(tenant.createdAt)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
         </TabsContent>
 
         <TabsContent value="leases" className="space-y-4">

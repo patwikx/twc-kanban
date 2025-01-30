@@ -40,6 +40,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationDrawer } from './notifcation-drawer';
 import { signOut } from 'next-auth/react';
+import TeamSwitcher from './team-switcher';
 
 const navigation = [
   {
@@ -87,12 +88,7 @@ export function Header({ user }: HeaderProps) {
       <div className="mx-4 md:mx-12 lg:mx-12 flex h-16 items-center justify-between">
         <div className="flex items-center gap-8">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <Building2 className="h-6 w-6" />
-            <span className="hidden font-bold sm:inline-block">
-              RD Realty PMS
-            </span>
-          </Link>
+          <TeamSwitcher />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
