@@ -50,7 +50,7 @@ interface AddUnitDialogProps {
 }
 
 const floorOptions = [
-  { id: "isFirstFloor", label: "First Floor" },
+  { id: "isFirstFloor", label: "Ground Floor" },
   { id: "isSecondFloor", label: "Second Floor" },
   { id: "isThirdFloor", label: "Third Floor" },
   { id: "isRoofTop", label: "Roof Top" },
@@ -125,7 +125,7 @@ export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
               name="unitNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Unit Number</FormLabel>
+                  <FormLabel>Space Number</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter unit number" {...field} />
                   </FormControl>

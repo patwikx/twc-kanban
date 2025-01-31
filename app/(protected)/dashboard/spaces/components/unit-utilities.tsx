@@ -45,7 +45,7 @@ export function UnitUtilities({ utilities = [], unitId }: UnitUtilitiesProps) {
         <div>
           <h3 className="text-lg font-medium">Utility Accounts</h3>
           <p className="text-sm text-muted-foreground">
-            Manage utility accounts and meters for this unit
+            Manage utility accounts and meters for this space
           </p>
         </div>
         <AddUtilityModal unitId={unitId} />

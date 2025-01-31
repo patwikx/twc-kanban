@@ -59,8 +59,8 @@ const navigation = [
     icon: Users,
   },
   {
-    name: 'Documents',
-    href: '/dashboard/documents',
+    name: 'Projects',
+    href: '/dashboard/project',
     icon: FileText,
   },
   {

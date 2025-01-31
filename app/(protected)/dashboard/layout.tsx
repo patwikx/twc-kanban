@@ -3,6 +3,7 @@ import { Header } from '@/components/header-system';
 import { auth } from '@/auth';
 import { Toaster } from '@/components/ui/sonner';
 import { ToastProvider } from '@/components/ui/toast';
+import { Providers } from '@/components/providers';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,7 +33,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <main className="flex-1">
             <ToastProvider>
             <Toaster />
+            <Providers>
               {children}
+              </Providers>
               </ToastProvider>
           </main>
         </div>

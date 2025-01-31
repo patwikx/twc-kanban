@@ -1,54 +1,73 @@
-# Next Auth v5 - Advanced Guide (2024)
+# RD Realty Development Corporation - Property Management System
 
-![image](https://github.com/AntonioErdeljac/next-auth-v5-advanced-guide/assets/23248726/d0175397-8c3f-4e82-91c4-78c14f29bb81)
 
-This is a repository for Next Auth v5 - Advanced Guide (2024)
 
-[VIDEO TUTORIAL](https://youtu.be/1MTyCvS05V4)
+This is a repository for RD Realty Development Corporation - Property Management System
 
-Key Features:
-- 🔐 Next-auth v5 (Auth.js)
-- 🚀 Next.js 14 with server actions
-- 🔑 Credentials Provider
-- 🌐 OAuth Provider (Social login with Google & GitHub)
-- 🔒 Forgot password functionality
-- ✉️ Email verification
-- 📱 Two factor verification
-- 👥 User roles (Admin & User)
-- 🔓 Login component (Opens in redirect or modal)
-- 📝 Register component
-- 🤔 Forgot password component
-- ✅ Verification component
-- ⚠️ Error component
-- 🔘 Login button
-- 🚪 Logout button
-- 🚧 Role Gate
-- 🔍 Exploring next.js middleware
-- 📈 Extending & Exploring next-auth session
-- 🔄 Exploring next-auth callbacks
-- 👤 useCurrentUser hook
-- 🛂 useRole hook
-- 🧑 currentUser utility
-- 👮 currentRole utility
-- 🖥️ Example with server component
-- 💻 Example with client component
-- 👑 Render content for admins using RoleGate component
-- 🛡️ Protect API Routes for admins only
-- 🔐 Protect Server Actions for admins only
-- 📧 Change email with new verification in Settings page
-- 🔑 Change password with old password confirmation in Settings page
-- 🔔 Enable/disable two-factor auth in Settings page
-- 🔄 Change user role in Settings page (for development purposes only)
+
+# Key Features
+
+# User Management
+- User authentication and authorization (integrated with NextAuth)
+- Role-based access control (Admin, Manager, Staff, Tenant)
+- User profile management
+
+# Property Management
+- Property creation and management
+- Unit management within properties
+- Property and unit tax tracking
+- Utility management for properties and units
+
+# Tenant Management
+- Tenant profile management
+- Lease management
+- Rent and payment tracking
+- Maintenance request system
+# Financial Management
+- Payment processing and tracking
+- Utility bill management
+- Property and unit tax management
+
+# Document Management
+- Document upload and storage
+- Document categorization (Lease, Contract, Invoice, Maintenance, Other)
+- Document association with properties, units, and tenants
+
+# Project Management
+- Project creation and tracking
+- Task management with boards and columns (Kanban-style)
+- Task assignment, commenting, and activity tracking
+- Project member management with roles
+
+# Maintenance Management
+- Maintenance request creation and tracking
+- Priority-based maintenance scheduling
+- Maintenance status updates
+
+# Reporting and Analytics
+- Audit log system for tracking all major actions
+- Customizable reporting capabilities (implied by the comprehensive data model)
+
+# Notification System
+- User-specific notifications
+- Multi-type notifications (System, Maintenance, Lease, Payment, etc.)
+- Notification prioritization
+
+# Utility Management
+- Tracking of utility accounts for properties and units
+- Utility bill management and payment tracking
+- Security and Compliance
+- Secure authentication with NextAuth
+- Detailed audit logging for compliance and security purposes
+- Role-based access control to ensure data privacy
+
+
+This system provides a robust foundation for managing properties, tenants, projects, and associated financial and maintenance aspects. It offers comprehensive features for both property management companies and project-based organizations, allowing for efficient management of resources, tasks, and communications.
 
 ### Prerequisites
 
 **Node version 18.7.x**
 
-### Cloning the repository
-
-```shell
-git clone https://github.com/AntonioErdeljac/next-auth-v5-advanced-guide.git
-```
 
 ### Install packages
 

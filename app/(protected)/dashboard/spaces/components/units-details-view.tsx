@@ -50,9 +50,9 @@ export function UnitDetailsView({ unit }: UnitDetailsViewProps) {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Link href="/dashboard/spaces">
-              <Button variant="ghost" size="sm">
+              <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Units
+                Back to Spaces
               </Button>
             </Link>
             <Badge
@@ -62,14 +62,14 @@ export function UnitDetailsView({ unit }: UnitDetailsViewProps) {
               {unit.status}
             </Badge>
           </div>
-          <h2 className="text-2xl font-bold">Unit {unit.unitNumber}</h2>
+          <h2 className="text-2xl font-bold">Space {unit.unitNumber}</h2>
           <p className="text-muted-foreground">{unit.property.propertyName}</p>
         </div>
         <div className="flex gap-2">
           <Link href={`/units/${unit.id}/edit`}>
             <Button>
               <Edit className="mr-2 h-4 w-4" />
-              Edit Unit
+              Edit Space
             </Button>
           </Link>
           <DeleteUnitDialog unitId={unit.id} unitNumber={unit.unitNumber} />

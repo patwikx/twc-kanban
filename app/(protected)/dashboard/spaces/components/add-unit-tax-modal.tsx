@@ -71,7 +71,7 @@ export function AddTaxModal({ unitId, onSuccess }: AddTaxModalProps) {
         <DialogHeader>
           <DialogTitle>Add Tax Record</DialogTitle>
           <DialogDescription>
-            Create a new real property tax record for this unit
+            Create a new real property tax record for this space
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

@@ -78,7 +78,7 @@ export function AddUtilityModal({ unitId, onSuccess }: AddUtilityModalProps) {
         <DialogHeader>
           <DialogTitle>Add Utility Account</DialogTitle>
           <DialogDescription>
-            Create a new utility account for this unit
+            Create a new utility account for this space
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

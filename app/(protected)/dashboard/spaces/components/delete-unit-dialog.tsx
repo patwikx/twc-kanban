@@ -33,7 +33,7 @@ export function DeleteUnitDialog({ unitId, unitNumber }: DeleteUnitDialogProps) 
     try {
       await deleteUnit(unitId);
       toast.success("Unit deleted successfully");
-      router.push("/units");
+      router.push("/dashboard/spaces");
       router.refresh();
     } catch (error) {
       toast.error("Failed to delete unit");
@@ -45,14 +45,14 @@ export function DeleteUnitDialog({ unitId, unitNumber }: DeleteUnitDialogProps) 
       <AlertDialogTrigger asChild>
         <Button variant="destructive">
           <Trash className="mr-2 h-4 w-4" />
-          Delete Unit
+          Delete Space
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Unit</AlertDialogTitle>
+          <AlertDialogTitle>Delete Space</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete Unit {unitNumber}? This action cannot be undone.
+            Are you sure you want to delete space {unitNumber}? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

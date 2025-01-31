@@ -84,7 +84,7 @@ export function CreateUnitForm({ properties }: CreateUnitFormProps) {
                 </SelectContent>
               </Select>
               <FormDescription>
-                Select the property this unit belongs to
+                Select the property this space belongs to
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -96,12 +96,12 @@ export function CreateUnitForm({ properties }: CreateUnitFormProps) {
           name="unitNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Unit Number</FormLabel>
+              <FormLabel>Space Number</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., A101" {...field} />
               </FormControl>
               <FormDescription>
-                Enter a unique identifier for this unit
+                Enter a unique identifier for this space
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -114,7 +114,7 @@ export function CreateUnitForm({ properties }: CreateUnitFormProps) {
             name="unitArea"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Unit Area (sqm)</FormLabel>
+                <FormLabel>Space Area (sqm)</FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" {...field} />
                 </FormControl>
@@ -180,7 +180,7 @@ export function CreateUnitForm({ properties }: CreateUnitFormProps) {
         />
 
         <div className="flex gap-4">
-          <Button type="submit">Create Unit</Button>
+          <Button type="submit">Create Space</Button>
           <Button
             type="button"
             variant="outline"
