@@ -32,9 +32,9 @@ export function SystemMenu() {
 
   const user = useCurrentUser();
 
-  const isAdmin = user?.role === 'Administrator';
-  const isManager = user?.role === 'Manager';
-  const isSupervisor = user?.role === 'Supervisor';
+  const isAdmin = user?.role === 'ADMIN';
+  const isManager = user?.role === 'STAFF';
+  const isSupervisor = user?.role === 'MANAGER';
 
   return (
     <NavigationMenu>

@@ -35,7 +35,7 @@ export async function addMember(input: AddMemberInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return member
   } catch (error) {
     throw new Error("Failed to add member")
@@ -67,7 +67,7 @@ export async function updateMemberRole(input: UpdateMemberRoleInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return member
   } catch (error) {
     throw new Error("Failed to update member role")
@@ -90,7 +90,7 @@ export async function removeMember(projectId: string, userId: string) {
       }
     })
 
-    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/dashboard/projects/${projectId}`)
   } catch (error) {
     throw new Error("Failed to remove member")
   }

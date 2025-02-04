@@ -24,6 +24,7 @@ import { FormSuccess } from "@/components/form-success"
 import { login } from "@/actions/login"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Mail, Lock, Loader2 } from "lucide-react"
+import Image from "next/image"
 
 export const LoginForm = () => {
   const searchParams = useSearchParams()
@@ -76,9 +77,9 @@ export const LoginForm = () => {
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
               className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4"
             >
-              <Lock className="w-8 h-8 text-primary-foreground" />
+              <Image src='/assets/rdrdc.webp' alt="rdrdc-logo" width={60} height={60}/>
             </motion.div>
-            <h2 className="text-2xl font-bold text-center">RDRDC</h2>
+            <h2 className="text-2xl font-bold text-center">RD Realty Group</h2>
             <h2 className="text-xl font-bold text-center">Property Management System</h2>
             <p className="text-muted-foreground text-center">Enter your credentials to access your account</p>
           </CardHeader>

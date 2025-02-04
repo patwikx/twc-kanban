@@ -243,16 +243,22 @@ model Property {
 }
 
 model PropertyTax {
-  id         String    @id @default(cuid())
-  propertyId String
-  taxYear    Int
-  TaxDecNo   String
-  taxAmount  Decimal   @db.Decimal(12, 2)
-  dueDate    DateTime
-  isPaid     Boolean   @default(false)
-  paidDate   DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  propertyId     String
+  taxYear        Int
+  TaxDecNo       String
+  taxAmount      Decimal   @db.Decimal(12, 2)
+  dueDate        DateTime
+  isPaid         Boolean   @default(false)
+  remarks        String?
+  isAnnual       Boolean   @default(false)
+  isQuarterly    Boolean   @default(false)
+  whatQuarter    String?
+  paidDate       DateTime?
+  processedBy    String?
+  markedAsPaidBy String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)

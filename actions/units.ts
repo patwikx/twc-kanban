@@ -67,7 +67,7 @@ export async function createUnit(formData: FormData) {
       entityType: EntityType.UNIT,
     });
 
-    revalidatePath(`/properties?selected=${data.propertyId}`);
+    revalidatePath(`/dashboard/properties?selected=${data.propertyId}`);
     return unit;
   } catch (error) {
     throw new AppError(
@@ -122,7 +122,7 @@ export async function updateUnit(id: string, formData: FormData) {
       entityType: EntityType.UNIT,
     });
 
-    revalidatePath(`/properties?selected=${unit.propertyId}`);
+    revalidatePath(`/dashboard/properties?selected=${unit.propertyId}`);
     return unit;
   } catch (error) {
     throw new AppError(
@@ -171,7 +171,7 @@ export async function deleteUnit(id: string) {
       entityType: EntityType.UNIT,
     });
 
-    revalidatePath(`/properties?selected=${unit.propertyId}`);
+    revalidatePath(`dashboard/properties?selected=${unit.propertyId}`);
     return unit;
   } catch (error) {
     throw new AppError(
@@ -257,7 +257,7 @@ export async function bulkDeleteUnits(ids: string[]) {
       )
     );
     
-    revalidatePath("/units");
+    revalidatePath("/dashboard/spaces");
   } catch (error) {
     throw new AppError(
       "Failed to delete units",
@@ -265,4 +265,34 @@ export async function bulkDeleteUnits(ids: string[]) {
       "UNIT_BULK_DELETE_ERROR"
     );
   }
+}
+
+export async function updateUnitDialog(id: string, formData: FormData) {
+  const unitArea = formData.get("unitArea");
+  const unitRate = formData.get("unitRate");
+  const rentAmount = formData.get("rentAmount");
+  const isFirstFloor = formData.get("isFirstFloor") === "on";
+  const isSecondFloor = formData.get("isSecondFloor") === "on";
+  const isThirdFloor = formData.get("isThirdFloor") === "on";
+  const isRoofTop = formData.get("isRoofTop") === "on";
+  const isMezzanine = formData.get("isMezzanine") === "on";
+
+  const updatedUnit = await prisma.unit.update({
+    where: { id },
+    data: {
+      unitArea: parseFloat(unitArea as string),
+      unitRate: parseFloat(unitRate as string),
+      rentAmount: parseFloat(rentAmount as string),
+      isFirstFloor,
+      isSecondFloor,
+      isThirdFloor,
+      isRoofTop,
+      isMezzanine,
+    },
+  });
+
+  revalidatePath("/dashboard/spaces");
+  revalidatePath(`/units/${id}`);
+  
+  return updatedUnit;
 }

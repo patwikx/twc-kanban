@@ -74,6 +74,7 @@ export type DocumentWithRelations = Document & {
 export type UtilityBillWithRelations = UtilityBill & {
   propertyUtility: PropertyUtility | null;
   unitUtilityAccount: UnitUtilityAccount | null;
+  // documents: Document[]; //added on 02/04/2025
 };
 
 export type UserWithRelations = User & {

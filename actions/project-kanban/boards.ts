@@ -48,7 +48,7 @@ export async function createBoard(input: CreateBoardInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return board
   } catch (error) {
     throw new Error("Failed to create board")
@@ -77,7 +77,7 @@ export async function updateBoard(boardId: string, input: UpdateBoardInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return board
   } catch (error) {
     throw new Error("Failed to update board")
@@ -98,7 +98,7 @@ export async function deleteBoard(boardId: string, projectId: string) {
       }
     })
 
-    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/dashboard/projects/${projectId}`)
   } catch (error) {
     throw new Error("Failed to delete board")
   }
@@ -132,7 +132,7 @@ export async function createColumn(input: CreateColumnInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return column
   } catch (error) {
     throw new Error("Failed to create column")
@@ -160,7 +160,7 @@ export async function updateColumn(columnId: string, input: UpdateColumnInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return column
   } catch (error) {
     throw new Error("Failed to update column")
@@ -180,7 +180,7 @@ export async function deleteColumn(columnId: string, projectId: string) {
       }
     })
 
-    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/dashboard/projects/${projectId}`)
   } catch (error) {
     throw new Error("Failed to delete column")
   }
@@ -211,7 +211,7 @@ export async function updateColumnOrder(input: UpdateColumnOrderInput) {
       )
     )
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
   } catch (error) {
     throw new Error("Failed to update column order")
   }

@@ -55,7 +55,7 @@ export async function createUnitTax(formData: FormData) {
       entityType: EntityType.UNIT_TAX,
     });
 
-    revalidatePath("/units");
+    revalidatePath("/dashboard/spaces");
     return unitTax;
   } catch (error) {
     throw new AppError(
@@ -110,7 +110,7 @@ export async function updateUnitTax(id: string, formData: FormData) {
       entityType: EntityType.UNIT_TAX,
     });
 
-    revalidatePath("/units");
+    revalidatePath("/dashboard/spaces");
     return unitTax;
   } catch (error) {
     throw new AppError(
@@ -154,7 +154,7 @@ export async function deleteUnitTax(id: string) {
       entityType: EntityType.UNIT_TAX,
     });
 
-    revalidatePath("/units");
+    revalidatePath("/dashboard/spaces");
     return unitTax;
   } catch (error) {
     throw new AppError(

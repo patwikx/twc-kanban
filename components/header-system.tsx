@@ -20,6 +20,9 @@ import {
   LandmarkIcon,
   LandPlot,
   LucideLandmark,
+  Notebook,
+  MenuSquare,
+  LucideMenu,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -41,8 +44,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationDrawer } from './notifcation-drawer';
 import { signOut } from 'next-auth/react';
 import TeamSwitcher from './team-switcher';
+import { DashboardIcon } from '@radix-ui/react-icons';
 
 const navigation = [
+  {
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: DashboardIcon,
+  },
   {
     name: 'Properties',
     href: '/dashboard/properties',
@@ -62,6 +71,11 @@ const navigation = [
     name: 'Projects',
     href: '/dashboard/project',
     icon: FileText,
+  },
+  {
+    name: 'Audit Logs',
+    href: '/dashboard/audit-logs',
+    icon: Notebook,
   },
   {
     name: 'Settings',

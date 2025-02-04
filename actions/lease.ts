@@ -77,7 +77,7 @@ export async function createLease(formData: FormData) {
       entityType: EntityType.LEASE,
     });
 
-    revalidatePath("/tenants");
+    revalidatePath("/dashboard/tenants");
     return lease;
   } catch (error) {
     throw new AppError(
@@ -144,7 +144,7 @@ export async function updateLease(id: string, formData: FormData) {
       entityType: EntityType.LEASE,
     });
 
-    revalidatePath("/tenants");
+    revalidatePath("/dashboard/tenants");
     return lease;
   } catch (error) {
     throw new AppError(
@@ -208,7 +208,7 @@ export async function terminateLease(id: string, formData: FormData) {
       entityType: EntityType.LEASE,
     });
 
-    revalidatePath("/tenants");
+    revalidatePath("/dashboard/tenants");
     return lease;
   } catch (error) {
     throw new AppError(
@@ -264,7 +264,7 @@ export async function deleteLease(id: string) {
       entityType: EntityType.LEASE,
     });
 
-    revalidatePath("/tenants");
+    revalidatePath("/dashboard/tenants");
     return lease;
   } catch (error) {
     throw new AppError(

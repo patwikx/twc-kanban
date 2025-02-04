@@ -66,7 +66,7 @@ export async function createTask(input: CreateTaskInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return task
   } catch (error) {
     throw new Error("Failed to create task")
@@ -108,7 +108,7 @@ export async function updateTask(taskId: string, projectId: string, input: Updat
       }
     })
 
-    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/dashboard/projects/${projectId}`)
     return task
   } catch (error) {
     throw new Error("Failed to update task")
@@ -129,7 +129,7 @@ export async function deleteTask(taskId: string, projectId: string) {
       }
     })
 
-    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/dashboard/projects/${projectId}`)
   } catch (error) {
     throw new Error("Failed to delete task")
   }
@@ -176,7 +176,7 @@ export async function createComment(input: CreateCommentInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return comment
   } catch (error) {
     throw new Error("Failed to create comment")
@@ -230,7 +230,7 @@ export async function createAttachment(input: CreateAttachmentInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return attachment
   } catch (error) {
     throw new Error("Failed to create attachment")
@@ -269,7 +269,7 @@ export async function createLabel(input: CreateLabelInput) {
       }
     })
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
     return label
   } catch (error) {
     throw new Error("Failed to create label")
@@ -300,7 +300,7 @@ export async function deleteLabel(labelId: string, taskId: string, projectId: st
       }
     })
 
-    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/dashboard/projects/${projectId}`)
   } catch (error) {
     throw new Error("Failed to delete label")
   }
@@ -332,7 +332,7 @@ export async function updateTaskOrder(input: UpdateTaskOrderInput) {
       )
     )
 
-    revalidatePath(`/projects/${input.projectId}`)
+    revalidatePath(`/dashboard/projects/${input.projectId}`)
   } catch (error) {
     throw new Error("Failed to update task order")
   }

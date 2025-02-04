@@ -28,6 +28,11 @@ export async function createPropertyTax(formData: FormData) {
         TaxDecNo: data.taxDecNo as string,
         taxAmount: parseFloat(data.taxAmount as string),
         dueDate: new Date(data.dueDate as string),
+        isAnnual: data.isAnnual === "true",
+        isQuarterly: data.isQuarterly === "true",
+        whatQuarter: data.whatQuarter as string,
+        processedBy: data.processedBy as string,
+        remarks: data.remarks as string,
       },
       include: {
         property: true,
@@ -50,7 +55,7 @@ export async function createPropertyTax(formData: FormData) {
       entityType: EntityType.PROPERTY_TAX,
     });
 
-    revalidatePath(`/properties?selected=${data.propertyId}`);
+    revalidatePath(`/dashboard/properties?selected=${data.propertyId}`);
     return propertyTax;
   } catch (error) {
     throw new AppError(
@@ -78,6 +83,11 @@ export async function updatePropertyTax(id: string, formData: FormData) {
         dueDate: new Date(data.dueDate as string),
         isPaid: data.isPaid === "true",
         paidDate: data.isPaid === "true" ? new Date() : null,
+        isAnnual: data.isAnnual === "true",
+        isQuarterly: data.isQuarterly === "true",
+        whatQuarter: data.whatQuarter as string,
+        processedBy: data.processedBy as string,
+        remarks: data.remarks as string,
       },
       include: {
         property: true,
@@ -100,7 +110,7 @@ export async function updatePropertyTax(id: string, formData: FormData) {
       entityType: EntityType.PROPERTY_TAX,
     });
 
-    revalidatePath(`/properties?selected=${propertyTax.propertyId}`);
+    revalidatePath(`/dashboard/properties?selected=${propertyTax.propertyId}`);
     return propertyTax;
   } catch (error) {
     throw new AppError(
@@ -139,7 +149,7 @@ export async function deletePropertyTax(id: string) {
       entityType: EntityType.PROPERTY_TAX,
     });
 
-    revalidatePath(`/properties?selected=${propertyTax.propertyId}`);
+    revalidatePath(`/dashboard/properties?selected=${propertyTax.propertyId}`);
     return propertyTax;
   } catch (error) {
     throw new AppError(
@@ -158,7 +168,7 @@ export async function updatePropertyTaxStatus(id: string, isPaid: boolean) {
     },
   });
 
-  revalidatePath(`/property/${tax.propertyId}`);
+  revalidatePath(`/dashboard/property/${tax.propertyId}`);
   return tax;
 }
 
@@ -170,7 +180,7 @@ export async function updateUtilityStatus(id: string, isActive: boolean) {
     },
   });
 
-  revalidatePath(`/property/${utility.propertyId}`);
+  revalidatePath(`/dashboard/property/${utility.propertyId}`);
   return utility;
 }
 
@@ -179,6 +189,6 @@ export async function deletePropertyUtility(id: string) {
     where: { id },
   });
 
-  revalidatePath(`/property/${utility.propertyId}`);
+  revalidatePath(`/dashboard/property/${utility.propertyId}`);
   return utility;
 }

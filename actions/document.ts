@@ -85,13 +85,13 @@ export async function createDocument(formData: FormData) {
 
     // Revalidate appropriate paths based on document context
     if (document.propertyId) {
-      revalidatePath(`/properties?selected=${document.propertyId}`);
+      revalidatePath(`/dashboard/properties?selected=${document.propertyId}`);
     }
     if (document.unitId) {
-      revalidatePath(`/units?selected=${document.unitId}`);
+      revalidatePath(`/dashboard/units?selected=${document.unitId}`);
     }
     if (document.tenantId) {
-      revalidatePath(`/tenants?selected=${document.tenantId}`);
+      revalidatePath(`/dashboard/tenants?selected=${document.tenantId}`);
     }
 
     return document;

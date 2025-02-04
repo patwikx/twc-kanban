@@ -41,6 +41,6 @@ export async function createUtility(formData: FormData) {
     entityType: EntityType.UTILITY_BILL,
   });
 
-  revalidatePath(`/properties?selected=${data.propertyId}`);
+  revalidatePath(`/dashboard/properties?selected=${data.propertyId}`);
   return utility;
 }

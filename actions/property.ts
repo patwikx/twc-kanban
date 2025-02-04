@@ -47,7 +47,7 @@ export async function createProperty(formData: FormData) {
     entityType: EntityType.PROPERTY,
   });
 
-  revalidatePath("/properties");
+  revalidatePath("/dashboard/properties");
   return property;
 }
 
@@ -90,7 +90,7 @@ export async function updateProperty(id: string, formData: FormData) {
     entityType: EntityType.PROPERTY,
   });
 
-  revalidatePath("/properties");
+  revalidatePath("/dashboard/properties");
   return property;
 }
 
@@ -119,7 +119,7 @@ export async function deleteProperty(id: string) {
     entityType: EntityType.PROPERTY,
   });
 
-  revalidatePath("/properties");
+  revalidatePath("/dashboard/properties");
   return property;
 }
 
@@ -168,7 +168,7 @@ export async function bulkDeleteProperties(ids: string[]) {
     )
   );
 
-  revalidatePath("/properties");
+  revalidatePath("/dashboard/properties");
 }
 
 export async function exportProperties() {
@@ -270,6 +270,6 @@ export async function importPropertiesFromCSV(formData: FormData) {
     )
   );
 
-  revalidatePath("/properties");
+  revalidatePath("/dashboard/properties");
   return createdProperties;
 }

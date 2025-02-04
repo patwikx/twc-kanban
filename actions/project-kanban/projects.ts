@@ -57,7 +57,7 @@ export async function createProject(input: CreateProjectInput) {
     })
 
     console.log("Created project:", project)
-    revalidatePath("/projects")
+    revalidatePath("/dashboard/projects")
     return project
   } catch (error) {
     console.error("Create project error:", error)
@@ -72,7 +72,7 @@ export async function createProject(input: CreateProjectInput) {
 export async function getProjects() {
   const session = await auth()
   if (!session?.user) {
-    redirect("/login")
+    redirect("/auth/login")
   }
 
   try {
@@ -130,7 +130,7 @@ export async function getProjects() {
 export async function getProject(projectId: string) {
   const session = await auth()
   if (!session?.user) {
-    redirect("/login")
+    redirect("/auth/login")
   }
 
   try {
@@ -241,7 +241,7 @@ export async function updateProject(projectId: string, input: UpdateProjectInput
       data: input
     })
 
-    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/dashboard/projects/${projectId}`)
     return project
   } catch (error) {
     throw new Error("Failed to update project")
@@ -263,7 +263,7 @@ export async function deleteProject(projectId: string) {
     })
 
     revalidatePath("/projects")
-    redirect("/projects")
+    redirect("/dashboard/projects")
   } catch (error) {
     throw new Error("Failed to delete project")
   }
