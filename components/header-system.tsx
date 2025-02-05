@@ -69,7 +69,7 @@ const navigation = [
   },
   {
     name: 'Projects',
-    href: '/dashboard/project',
+    href: '/dashboard/projects',
     icon: FileText,
   },
   {
