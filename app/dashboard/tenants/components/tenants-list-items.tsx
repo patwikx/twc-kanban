@@ -7,13 +7,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TenantListItemProps {
-  tenant: Tenant;
-  isSelected: boolean;
-  onSelect: (checked: boolean) => void;
-  checked: boolean;
+  tenant?: Tenant;
+  isSelected?: boolean;
+  onSelect?: (checked: boolean) => void;
+  checked?: boolean;
   collapsed?: boolean;
+  isLoading?: boolean;
 }
 
 export function TenantListItem({
@@ -22,12 +24,38 @@ export function TenantListItem({
   onSelect,
   checked,
   collapsed = false,
+  isLoading = false,
 }: TenantListItemProps) {
   const router = useRouter();
 
   const handleClick = () => {
+    if (isLoading || !tenant) return;
     router.replace(`/dashboard/tenants?selected=${tenant.id}`);
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-4 border-b">
+        <div className="flex items-center space-x-4">
+          {!collapsed && <Skeleton className="h-4 w-4" />}
+          <div className={cn(
+            "flex items-center space-x-4 min-w-0",
+            collapsed ? "justify-center" : "flex-1"
+          )}>
+            <Skeleton className="h-10 w-10 rounded-full" />
+            {!collapsed && (
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tenant) return null;
 
   const content = (
     <div
