@@ -133,6 +133,34 @@ export function ProjectBoard({ project }: ProjectBoardProps) {
     }
   }, [columns, project.id, toast])
 
+  const handleTaskCreated = useCallback((newTask: Task) => {
+    setColumns(prevColumns => 
+      prevColumns.map(column => {
+        if (column.id === newTask.columnId) {
+          return {
+            ...column,
+            tasks: [...column.tasks, newTask]
+          }
+        }
+        return column
+      })
+    )
+  }, [])
+  
+  const handleTaskEdited = useCallback((newTask: Task) => {
+    setColumns(prevColumns => 
+      prevColumns.map(column => {
+        if (column.id === newTask.columnId) {
+          return {
+            ...column,
+            tasks: [...column.tasks, newTask]
+          }
+        }
+        return column
+      })
+    )
+  }, [])
+
   return (
     <div className="flex-1 overflow-auto bg-muted/20 p-4">
       <DragDropContext onDragEnd={onDragEnd}>
@@ -142,6 +170,7 @@ export function ProjectBoard({ project }: ProjectBoardProps) {
               key={column.id}
               column={column}
               projectId={project.id}
+              onTaskCreated={handleTaskCreated}
             />
           ))}
         </div>

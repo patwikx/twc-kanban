@@ -42,9 +42,10 @@ interface ProjectColumnProps {
     tasks: any[]
   }
   projectId: string
+  onTaskCreated: (task: any) => void
 }
 
-export function ProjectColumn({ column, projectId }: ProjectColumnProps) {
+export function ProjectColumn({ column, projectId, onTaskCreated }: ProjectColumnProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
   // Calculate column statistics
@@ -190,6 +191,7 @@ export function ProjectColumn({ column, projectId }: ProjectColumnProps) {
         onOpenChange={setCreateDialogOpen}
         projectId={projectId}
         columnId={column.id}
+        onTaskCreated={onTaskCreated}
       />
     </div>
   )

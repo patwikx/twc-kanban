@@ -5,51 +5,46 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { 
-  MessageSquare, 
-  Paperclip, 
-  MoreHorizontal, 
-  User, 
-  Edit, 
-  Trash, 
-  Loader, 
-  Save, 
-  AlignLeft, 
-  Type, 
-  AlertCircle, 
-  ArrowDown, 
-  ArrowRight, 
-  ArrowUp, 
-  AlertTriangle, 
-  Activity, 
-  Circle, 
-  Timer, 
-  Eye, 
-  CheckCircle, 
-  CalendarIcon 
+import {
+  MessageSquare,
+  Paperclip,
+  MoreHorizontal,
+  User,
+  Edit,
+  Trash,
+  Loader,
+  Save,
+  AlignLeft,
+  Type,
+  AlertCircle,
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  AlertTriangle,
+  Activity,
+  Circle,
+  Timer,
+  Eye,
+  CheckCircle,
+  CalendarIcon,
 } from "lucide-react"
 import { formatDate } from "@/lib/utils/format"
 import React, { useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateTask } from "@/actions/project-kanban/tasks"
 import { useToast } from "@/components/ui/use-toast"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -82,50 +77,48 @@ const priorityConfig = {
   LOW: {
     color: "bg-blue-500/10 text-blue-500",
     icon: ArrowDown,
-    label: "Low Priority"
+    label: "Low Priority",
   },
   MEDIUM: {
     color: "bg-yellow-500/10 text-yellow-500",
     icon: ArrowRight,
-    label: "Medium Priority"
+    label: "Medium Priority",
   },
   HIGH: {
     color: "bg-orange-500/10 text-orange-500",
     icon: ArrowUp,
-    label: "High Priority"
+    label: "High Priority",
   },
   URGENT: {
     color: "bg-red-500/10 text-red-500",
     icon: AlertTriangle,
-    label: "Urgent"
-  }
+    label: "Urgent",
+  },
 }
 
 const statusConfig = {
   TODO: {
     icon: Circle,
-    color: "text-slate-500"
+    color: "text-slate-500",
   },
   IN_PROGRESS: {
     icon: Timer,
-    color: "text-blue-500"
+    color: "text-blue-500",
   },
   REVIEW: {
     icon: Eye,
-    color: "text-purple-500"
+    color: "text-purple-500",
   },
   DONE: {
     icon: CheckCircle,
-    color: "text-green-500"
-  }
+    color: "text-green-500",
+  },
 }
 
 export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [date, setDate] = useState<Date | undefined>(
-    task.dueDate ? new Date(task.dueDate) : undefined
-  )
+  const [date, setDate] = useState<Date | undefined>(task.dueDate ? new Date(task.dueDate) : undefined)
   const { toast } = useToast()
 
   const PriorityIcon = priorityConfig[task.priority].icon
@@ -185,7 +178,7 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
                               style={{
                                 backgroundColor: `${label.color}15`,
                                 color: label.color,
-                                borderColor: `${label.color}30`
+                                borderColor: `${label.color}30`,
                               }}
                             >
                               Test
@@ -208,8 +201,8 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
                         <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Task
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
                           <Trash className="h-4 w-4 mr-2" />
@@ -219,7 +212,7 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
                     </DropdownMenu>
                   </div>
                   {task.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                    <p className="text-sm text-muted-foreground line-clamp-2 break-all overflow-hidden">
                       {task.description}
                     </p>
                   )}
@@ -227,7 +220,10 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
               </div>
 
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Badge variant="secondary" className={cn("flex items-center gap-1", priorityConfig[task.priority].color)}>
+                <Badge
+                  variant="secondary"
+                  className={cn("flex items-center gap-1", priorityConfig[task.priority].color)}
+                >
                   <PriorityIcon className="h-3 w-3" />
                   <span>{task.priority}</span>
                 </Badge>
@@ -284,9 +280,7 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
               <Edit className="h-5 w-5 text-muted-foreground" />
               Edit Task
             </DialogTitle>
-            <DialogDescription>
-              Make changes to your task here. Click save when you&apos;re done.
-            </DialogDescription>
+            <DialogDescription>Make changes to your task here. Click save when you&apos;re done.</DialogDescription>
           </DialogHeader>
           <form action={onSubmit} className="space-y-6">
             <div className="grid gap-6">
@@ -320,7 +314,7 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
                         <SelectItem key={key} value={key}>
                           <div className="flex items-center gap-2">
                             {React.createElement(config.icon, {
-                              className: `h-4 w-4 ${config.color.split(" ")[1]}`
+                              className: `h-4 w-4 ${config.color.split(" ")[1]}`,
                             })}
                             {config.label}
                           </div>
@@ -344,11 +338,12 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
                         <SelectItem key={key} value={key}>
                           <div className="flex items-center gap-2">
                             {React.createElement(config.icon, {
-                              className: `h-4 w-4 ${config.color}`
+                              className: `h-4 w-4 ${config.color}`,
                             })}
-                            {key.split("_").map(word => 
-                              word.charAt(0) + word.slice(1).toLowerCase()
-                            ).join(" ")}
+                            {key
+                              .split("_")
+                              .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+                              .join(" ")}
                           </div>
                         </SelectItem>
                       ))}
@@ -358,29 +353,19 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  Due Date
-                </Label>
+                <Label className="flex items-center gap-2">Due Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                      )}
+                      className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {date ? format(date, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      initialFocus
-                    />
+                    <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -401,22 +386,12 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t">
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="gap-2"
-              >
+              <Button type="button" variant="destructive" size="sm" className="gap-2">
                 <Trash className="h-4 w-4" />
                 Delete Task
               </Button>
               <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                  disabled={loading}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={loading}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading} className="gap-2">
@@ -440,3 +415,4 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
     </>
   )
 }
+

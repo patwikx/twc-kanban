@@ -48,6 +48,7 @@ interface CreateTaskDialogProps {
   onOpenChange: (open: boolean) => void
   projectId: string
   columnId: string
+  onTaskCreated: (task: any) => void
 }
 
 const priorityConfig = {
@@ -78,6 +79,7 @@ export function CreateTaskDialog({
   onOpenChange,
   projectId,
   columnId,
+  onTaskCreated
 }: CreateTaskDialogProps) {
   const [loading, setLoading] = useState(false)
   const [date, setDate] = useState<Date>()
@@ -87,7 +89,7 @@ export function CreateTaskDialog({
   async function onSubmit(formData: FormData) {
     setLoading(true)
     try {
-      await createTask({
+      const newTask = await createTask({
         title: formData.get("title") as string,
         description: formData.get("description") as string,
         priority: formData.get("priority") as any,
@@ -95,6 +97,9 @@ export function CreateTaskDialog({
         columnId,
         dueDate: date,
       })
+
+      // Update local state with the new task
+      onTaskCreated(newTask)
 
       toast({
         title: "Task created",
@@ -138,6 +143,7 @@ export function CreateTaskDialog({
                 placeholder="Enter a clear, descriptive title"
                 className="h-11"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -151,6 +157,7 @@ export function CreateTaskDialog({
                 name="description"
                 placeholder="Provide detailed information about the task..."
                 className="min-h-[120px] resize-y"
+                disabled={loading}
               />
             </div>
 
@@ -160,7 +167,7 @@ export function CreateTaskDialog({
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   Priority Level
                 </Label>
-                <Select name="priority" defaultValue="MEDIUM">
+                <Select name="priority" defaultValue="MEDIUM" disabled={loading}>
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -192,6 +199,7 @@ export function CreateTaskDialog({
                         "w-full justify-start text-left font-normal h-11",
                         !date && "text-muted-foreground"
                       )}
+                      disabled={loading}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {date ? format(date, "PPP") : "Set due date"}
