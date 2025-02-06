@@ -17,12 +17,12 @@ import { TenantBulkActions } from "./tenants-bulkd-action";
 import { TenantListItem } from "./tenants-list-items";
 import { TenantDetails } from "./tenants-details";
 
-
 export function TenantList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tenants, setTenants] = useState<TenantWithRelations[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
   const selectedId = searchParams.get("selected");
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -33,6 +33,7 @@ export function TenantList() {
   useEffect(() => {
     const fetchTenants = async () => {
       try {
+        setIsLoading(true);
         const data = await getTenants();
         setTenants(data);
       } catch (error) {
@@ -41,6 +42,8 @@ export function TenantList() {
           description: "Failed to fetch tenants",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -74,7 +77,7 @@ export function TenantList() {
     }
   }, [selectedId, isMobile]);
 
-  if (!tenants) {
+  if (isLoading) {
     return <TenantListSkeleton />;
   }
 
@@ -131,20 +134,32 @@ export function TenantList() {
 
         {/* Tenant List */}
         <div className="overflow-auto flex-1 divide-y divide-border">
-          {filteredTenants.map((tenant) => (
-            <TenantListItem
-              key={tenant.id}
-              tenant={tenant}
-              isSelected={selectedId === tenant.id}
-              onSelect={(checked) => handleSelect(tenant.id, checked)}
-              checked={selectedIds.includes(tenant.id)}
-              collapsed={!sidebarOpen}
-            />
-          ))}
-          {filteredTenants.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <p className="text-sm text-muted-foreground">No tenants found</p>
-            </div>
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <TenantListItem
+                key={index}
+                isLoading={true}
+                collapsed={!sidebarOpen}
+              />
+            ))
+          ) : (
+            <>
+              {filteredTenants.map((tenant) => (
+                <TenantListItem
+                  key={tenant.id}
+                  tenant={tenant}
+                  isSelected={selectedId === tenant.id}
+                  onSelect={(checked) => handleSelect(tenant.id, checked)}
+                  checked={selectedIds.includes(tenant.id)}
+                  collapsed={!sidebarOpen}
+                />
+              ))}
+              {filteredTenants.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <p className="text-sm text-muted-foreground">No tenants found</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
