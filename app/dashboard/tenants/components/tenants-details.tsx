@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TenantWithRelations } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,17 @@ import { z } from 'zod';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const revalidate = 0;
 
@@ -62,9 +73,11 @@ interface TenantDetailsProps {
   tenant: TenantWithRelations;
 }
 
-export function TenantDetails({ tenant }: TenantDetailsProps) {
+export function TenantDetails({ tenant: initialTenant }: TenantDetailsProps) {
+  const [tenant, setTenant] = useState(initialTenant);
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantFormSchema),
@@ -81,31 +94,41 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
     },
   });
 
+  useEffect(() => {
+    const selectedId = searchParams.get('selected');
+    if (selectedId && selectedId !== tenant.id) {
+      fetch(`/api/tenants/${selectedId}`)
+        .then(res => res.json())
+        .then(data => {
+          setTenant(data);
+          form.reset({
+            bpCode: data.bpCode,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+            company: data.company,
+            status: data.status,
+            emergencyContactName: data.emergencyContactName || "",
+            emergencyContactPhone: data.emergencyContactPhone || "",
+          });
+        });
+    }
+  }, [searchParams, form, tenant.id]);
+
   const { execute: handleDelete, loading: isDeleting } = useAsync(
     async () => {
-      const confirmed = window.confirm("Are you sure you want to delete this tenant?");
-      if (confirmed) {
-        try {
-          await deleteTenant(tenant.id);
-          toast({
-            title: "Success",
-            description: "Tenant has been deleted successfully.",
-            variant: "default",
-          });
-          router.push("/tenants");
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: (error instanceof Error ? error.message : "Failed to delete tenant. Please try again."),
-            variant: "destructive",
-          });
-        }
-      }
+      await deleteTenant(tenant.id);
+      toast({
+        title: "Success",
+        description: "Tenant has been deleted successfully.",
+        variant: "default",
+      });
+      router.push("/tenants");
     },
     {
-      // Remove successMessage since we're handling it with toast
-      showSuccessToast: false, // Disable default success toast
-      showErrorToast: false, // Disable default error toast
+      showSuccessToast: false,
+      showErrorToast: false,
     }
   );
 
@@ -114,7 +137,6 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
       try {
         const formData = new FormData();
         
-        // Add each form value to the FormData object
         Object.entries(values).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
             formData.append(key, value.toString());
@@ -128,7 +150,8 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
           variant: "default",
         });
         setIsEditing(false);
-        form.reset(); // Reset form after successful submission
+        form.reset();
+        router.refresh();
       } catch (error) {
         toast({
           title: "Error",
@@ -138,8 +161,8 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
       }
     },
     {
-      showSuccessToast: true, // Disable default success toast
-      showErrorToast: true, // Disable default error toast
+      showSuccessToast: true,
+      showErrorToast: true,
     }
   );
 
@@ -163,6 +186,82 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
       }
     }));
 
+  const handleLeaseCreated = (newLease: any) => {
+    setTenant(prev => ({
+      ...prev,
+      leases: [...prev.leases, newLease]
+    }));
+  };
+
+  const handleLeaseTerminated = (leaseId: string) => {
+    setTenant(prev => ({
+      ...prev,
+      leases: prev.leases.map(lease => 
+        lease.id === leaseId 
+          ? { ...lease, status: "TERMINATED" }
+          : lease
+      )
+    }));
+  };
+
+  const handleExportLeases = () => {
+    // Define CSV headers
+    const headers = [
+      "Property",
+      "Unit",
+      "Start Date",
+      "End Date",
+      "Rent Amount",
+      "Security Deposit",
+      "Status",
+      "Termination Date",
+      "Termination Reason"
+    ];
+
+    // Format lease data for CSV
+    const csvData = tenant.leases.map(lease => {
+      // Remove currency symbols and commas from amounts
+      const rentAmount = lease.rentAmount.toString().replace(/[₱,]/g, '');
+      const securityDeposit = lease.securityDeposit.toString().replace(/[₱,]/g, '');
+
+      return [
+        lease.unit.property.propertyName,
+        lease.unit.unitNumber,
+        formatDate(lease.startDate),
+        formatDate(lease.endDate),
+        rentAmount,
+        securityDeposit,
+        lease.status,
+        lease.terminationDate ? formatDate(lease.terminationDate) : '',
+        lease.terminationReason || ''
+      ];
+    });
+
+    // Add BOM for Excel to properly recognize UTF-8
+    const BOM = "\uFEFF";
+    
+    // Combine headers and data
+    const csvContent = BOM + [
+      headers.join(','),
+      ...csvData.map(row => 
+        // Wrap fields in quotes to handle commas in text
+        row.map(field => `"${field}"`).join(',')
+      )
+    ].join('\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leases_${tenant.firstName}_${tenant.lastName}_${formatDate(new Date())}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Clean up the URL object
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -173,242 +272,259 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
           <p className="text-muted-foreground">BP Code: {tenant.bpCode}</p>
         </div>
         <div className="flex space-x-2">
-        <Dialog open={isEditing} onOpenChange={setIsEditing}>
-  <DialogTrigger asChild>
-    <Button variant="outline" size="icon" className="h-9 w-9">
-      <Edit className="h-4 w-4" />
-    </Button>
-  </DialogTrigger>
-  <DialogContent className="sm:max-w-[600px]">
-    <DialogHeader>
-      <DialogTitle>Edit Tenant Profile</DialogTitle>
-      <DialogDescription>
-        Update tenant information and preferences. All fields marked with * are required.
-      </DialogDescription>
-    </DialogHeader>
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-6">
-        {/* Basic Information Section */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <User className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-medium">Basic Information</h3>
-          </div>
-          <Separator />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="bpCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      BP Code <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter BP code" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      First Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter first name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Status <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(TenantStatus).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status.charAt(0) + status.slice(1).toLowerCase()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Last Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter last name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-        </div>
+          <Dialog open={isEditing} onOpenChange={setIsEditing}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <Edit className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Tenant Profile</DialogTitle>
+                <DialogDescription>
+                  Update tenant information and preferences. All fields marked with * are required.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-6">
+                  {/* Basic Information Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="text-lg font-medium">Basic Information</h3>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="bpCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                BP Code <span className="text-destructive">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter BP code" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="firstName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                First Name <span className="text-destructive">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter first name" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Status <span className="text-destructive">*</span>
+                              </FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {Object.values(TenantStatus).map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                      {status.charAt(0) + status.slice(1).toLowerCase()}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="lastName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Last Name <span className="text-destructive">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter last name" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Contact Information Section */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Mail className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-medium">Contact Information</h3>
-          </div>
-          <Separator />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Email <span className="text-destructive">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="Enter email address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Phone <span className="text-destructive">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter phone number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+                  {/* Contact Information Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Mail className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="text-lg font-medium">Contact Information</h3>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Email <span className="text-destructive">*</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="Enter email address" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Phone <span className="text-destructive">*</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter phone number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
 
-        {/* Company Information Section */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Building2 className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-medium">Company Information</h3>
-          </div>
-          <Separator />
-          <FormField
-            control={form.control}
-            name="company"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Company Name <span className="text-destructive">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter company name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+                  {/* Company Information Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="text-lg font-medium">Company Information</h3>
+                    </div>
+                    <Separator />
+                    <FormField
+                      control={form.control}
+                      name="company"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Company Name <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter company name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-        {/* Emergency Contact Section */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-medium">Emergency Contact</h3>
-          </div>
-          <Separator />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="emergencyContactName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Emergency Contact Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter emergency contact name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="emergencyContactPhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Emergency Contact Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter emergency contact phone" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+                  {/* Emergency Contact Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="text-lg font-medium">Emergency Contact</h3>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="emergencyContactName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Emergency Contact Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter emergency contact name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="emergencyContactPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Emergency Contact Phone</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter emergency contact phone" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsEditing(false)}
-            disabled={isUpdating}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? (
-              <>
-                <span className="animate-spin mr-2">⚪</span>
-                Saving Changes...
-              </>
-            ) : (
-              "Save Changes"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
-  </DialogContent>
-</Dialog>
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            onClick={() => handleDelete()}
-            disabled={isDeleting}
-            className="h-9 w-9"
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      disabled={isUpdating}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isUpdating}>
+                      {isUpdating ? (
+                        <>
+                          <span className="animate-spin mr-2">⚪</span>
+                          Saving Changes...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <Trash className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete tenant
+                  &quot;{tenant.firstName} {tenant.lastName}&quot; and all their associated data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Tenant"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -416,12 +532,13 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
         <TabsList className="bg-background">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="leases">Leases ({activeLeases.length})</TabsTrigger>
-          <TabsTrigger value="maintenance">
-            Maintenance ({openMaintenanceRequests.length})
-          </TabsTrigger>
           <TabsTrigger value="documents">
             Documents ({tenant.documents.length})
           </TabsTrigger>
+          <TabsTrigger value="maintenance">
+            Maintenance ({openMaintenanceRequests.length})
+          </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -566,10 +683,21 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
         <TabsContent value="leases" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Leases</h3>
-            <AddLeaseDialog 
-              tenant={tenant}
-              availableUnits={availableUnits}
-            />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleExportLeases}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export to CSV
+              </Button>
+              <AddLeaseDialog 
+                tenant={tenant}
+                availableUnits={availableUnits}
+                onLeaseCreated={handleLeaseCreated}
+              />
+            </div>
           </div>
           <Card>
             <CardContent className="p-0">
@@ -585,29 +713,40 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tenant.leases.map((lease) => (
-                    <TableRow key={lease.id}>
-                      <TableCell>
-                        {lease.unit.property.propertyName} - {lease.unit.unitNumber}
+                  {tenant.leases.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        No lease records found
                       </TableCell>
-                      <TableCell>{formatDate(lease.startDate)}</TableCell>
-                      <TableCell>{formatDate(lease.endDate)}</TableCell>
-                      <TableCell>{formatCurrency(lease.rentAmount.toString())}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={lease.status === "ACTIVE" ? "default" : "secondary"}
-                        >
-                          {lease.status.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-  {lease.status === "ACTIVE" && (
-    <TerminateLeaseDialog lease={lease} />
-  )}
-  <EditLeaseDialog lease={lease} />
-</TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    tenant.leases.map((lease) => (
+                      <TableRow key={lease.id}>
+                        <TableCell>
+                          {lease.unit.property.propertyName} - {lease.unit.unitNumber}
+                        </TableCell>
+                        <TableCell>{formatDate(lease.startDate)}</TableCell>
+                        <TableCell>{formatDate(lease.endDate)}</TableCell>
+                        <TableCell>{formatCurrency(lease.rentAmount.toString())}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={lease.status === "ACTIVE" ? "default" : "secondary"}
+                          >
+                            {lease.status.toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          {lease.status === "ACTIVE" && (
+                            <TerminateLeaseDialog 
+                              lease={lease} 
+                              onLeaseTerminated={handleLeaseTerminated}
+                            />
+                          )}
+                          <EditLeaseDialog lease={lease} />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -636,42 +775,50 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tenant.maintenanceRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell>
-                        {request.unit.property.propertyName} - {request.unit.unitNumber}
-                      </TableCell>
-                      <TableCell>{request.category}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            request.priority === "HIGH" ? "destructive" :
-                            request.priority === "MEDIUM" ? "default" :
-                            "secondary"
-                          }
-                        >
-                          {request.priority.toLowerCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            request.status === MaintenanceStatus.ASSIGNED ? "default" :
-                            request.status === "IN_PROGRESS" ? "default" :
-                            "secondary"
-                          }
-                        >
-                          {request.status.toLowerCase().replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDate(request.createdAt)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                  {tenant.maintenanceRequests.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        No maintenance records found
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    tenant.maintenanceRequests.map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell>
+                          {request.unit.property.propertyName} - {request.unit.unitNumber}
+                        </TableCell>
+                        <TableCell>{request.category}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              request.priority === "HIGH" ? "destructive" :
+                              request.priority === "MEDIUM" ? "default" :
+                              "secondary"
+                            }
+                          >
+                            {request.priority.toLowerCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              request.status === MaintenanceStatus.ASSIGNED ? "default" :
+                              request.status === "IN_PROGRESS" ? "default" :
+                              "secondary"
+                            }
+                          >
+                            {request.status.toLowerCase().replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(request.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm">
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -698,20 +845,28 @@ export function TenantDetails({ tenant }: TenantDetailsProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tenant.documents.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell>{doc.name}</TableCell>
-                      <TableCell>
-                        <span className="capitalize">{doc.documentType.toLowerCase()}</span>
-                      </TableCell>
-                      <TableCell>{formatDate(doc.createdAt)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
+                  {tenant.documents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        No document records found
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    tenant.documents.map((doc) => (
+                      <TableRow key={doc.id}>
+                        <TableCell>{doc.name}</TableCell>
+                        <TableCell>
+                          <span className="capitalize">{doc.documentType.toLowerCase()}</span>
+                        </TableCell>
+                        <TableCell>{formatDate(doc.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

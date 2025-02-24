@@ -18,6 +18,8 @@ export async function createUnitTax(formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    console.log('Creating unit tax with data:', data);
+
     const unitTax = await prisma.unitTax.create({
       data: {
         unit: {
@@ -29,6 +31,12 @@ export async function createUnitTax(formData: FormData) {
         taxDecNo: data.taxDecNo as string,
         taxAmount: parseFloat(data.taxAmount as string),
         dueDate: new Date(data.dueDate as string),
+        isAnnual: data.isAnnual === "true",
+        isQuarterly: data.isQuarterly === "true",
+        whatQuarter: data.whatQuarter as string || null,
+        processedBy: data.processedBy as string || null,
+        remarks: data.remarks as string || null,
+        markedAsPaidBy: data.markedAsPaidBy as string || null,
       },
       include: {
         unit: {
@@ -58,6 +66,8 @@ export async function createUnitTax(formData: FormData) {
     revalidatePath("/dashboard/spaces");
     return unitTax;
   } catch (error) {
+    console.error('Prisma error:', error);
+    
     throw new AppError(
       "Failed to create property tax record",
       500,

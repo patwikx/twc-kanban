@@ -40,6 +40,17 @@ import { updatePropertyTaxStatus, updateUtilityStatus } from "@/actions/property
 import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 interface PropertyDetailsProps {
@@ -54,10 +65,8 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
 
   const { execute: handleDelete, loading: isDeleting } = useAsync(
     async () => {
-      if (confirm("Are you sure you want to delete this property?")) {
-        await deleteProperty(property.id);
-        router.push("/dashboard/properties");
-      }
+      await deleteProperty(property.id);
+      router.push("/dashboard/properties");
     },
     {
       successMessage: "Property deleted successfully",
@@ -104,6 +113,109 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
 
   const totalRentAmount = property.units.reduce((sum, unit) => sum + Number(unit.rentAmount), 0);
   const totalTaxAmount = property.propertyTaxes.reduce((sum, tax) => sum + Number(tax.taxAmount), 0);
+
+  const handleExportTaxesCSV = () => {
+    const csvData = property.propertyTaxes.map(tax => ({
+      'Tax Year': tax.taxYear,
+      'Tax Declaration No.': tax.TaxDecNo,
+      'Amount': Number(tax.taxAmount).toFixed(2),
+      'Annual': tax.isAnnual ? 'Yes' : 'No',
+      'Quarterly': tax.isQuarterly ? 'Yes' : 'No',
+      'Quarter': tax.whatQuarter || '-',
+      'Due Date': formatDate(tax.dueDate),
+      'Status': tax.isPaid ? 'Paid' : 'Unpaid',
+      'Processed By': tax.processedBy ? 
+        `${users.find(user => user.id === tax.processedBy)?.firstName} ${users.find(user => user.id === tax.processedBy)?.lastName}` 
+        : '-',
+      'Remarks': tax.remarks || '-',
+      'Payment Date': tax.paidDate ? format(tax.paidDate, "PPP") : '-'
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csvString = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row];
+        return `"${value}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const filename = `property_${property.propertyName}_rpt_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportUnitsCSV = () => {
+    const csvData = property.units.map(unit => ({
+      'Space Number': unit.unitNumber,
+      'Area (sqm)': unit.unitArea.toString(),
+      'Rate': Number(unit.unitRate).toFixed(2),
+      'Rent Amount': Number(unit.rentAmount).toFixed(2),
+      'Ground Floor': unit.isFirstFloor ? 'Yes' : 'No',
+      'Second Floor': unit.isSecondFloor ? 'Yes' : 'No',
+      'Third Floor': unit.isThirdFloor ? 'Yes' : 'No',
+      'Rooftop': unit.isRoofTop ? 'Yes' : 'No',
+      'Mezzanine': unit.isMezzanine ? 'Yes' : 'No',
+      'Status': unit.status,
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csvString = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row];
+        return `"${value}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const filename = `property_${property.propertyName}_spaces_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportUtilitiesCSV = () => {
+    const csvData = property.utilities.map(utility => ({
+      'Type': utility.utilityType,
+      'Provider': utility.provider,
+      'Account Number': utility.accountNumber,
+      'Meter Number': utility.meterNumber || '-',
+      'Status': utility.isActive ? 'Active' : 'Inactive'
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csvString = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row];
+        return `"${value}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const filename = `property_${property.propertyName}_utilities_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-6">
@@ -238,15 +350,32 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
               </form>
             </DialogContent>
           </Dialog>
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            onClick={() => handleDelete()}
-            disabled={isDeleting}
-            className="h-9 w-9"
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <Trash className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the property
+                  &quot;{property.propertyName}&quot; and all its associated data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Property"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -254,9 +383,11 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
         <TabsList className="bg-background">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="units">Spaces ({property.units.length})</TabsTrigger>
-          <TabsTrigger value="utilities">Utilities ({property.utilities.length})</TabsTrigger>
           <TabsTrigger value="taxes">Real Property Taxes ({property.propertyTaxes.length})</TabsTrigger>
           <TabsTrigger value="documents">Documents ({property.documents.length})</TabsTrigger>
+          <TabsTrigger value="utilities">Utilities ({property.utilities.length})</TabsTrigger>
+
+
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -404,7 +535,17 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
         <TabsContent value="units" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Spaces</h3>
-            <AddUnitDialog propertyId={property.id} />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleExportUnitsCSV}
+                disabled={!property.units.length}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export to CSV
+              </Button>
+              <AddUnitDialog propertyId={property.id} />
+            </div>
           </div>
           <Card>
             <CardContent className="p-0">
@@ -425,54 +566,62 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {property.units.map((unit) => (
-                    <TableRow key={unit.id}>
-                      <TableCell>{unit.unitNumber}</TableCell>
-                      <TableCell>{unit.unitArea.toString()}</TableCell>
-                      <TableCell>{formatCurrency(Number(unit.unitRate))}</TableCell>
-                      <TableCell>{formatCurrency(Number(unit.rentAmount))}</TableCell>
-                      <TableCell>
-  <Badge variant={unit.isFirstFloor ? "default" : "secondary"} className={unit.isFirstFloor ? "bg-green-500" : ""}>
-    {unit.isFirstFloor ? "Yes" : "No"}
-  </Badge>
-</TableCell>
-<TableCell>
-  <Badge variant={unit.isSecondFloor ? "default" : "secondary"} className={unit.isSecondFloor ? "bg-green-500" : ""}>
-    {unit.isSecondFloor ? "Yes" : "No"}
-  </Badge>
-</TableCell>
-<TableCell>
-  <Badge variant={unit.isThirdFloor ? "default" : "secondary"} className={unit.isThirdFloor ? "bg-green-500" : ""}>
-    {unit.isThirdFloor ? "Yes" : "No"}
-  </Badge>
-</TableCell>
-<TableCell>
-  <Badge variant={unit.isRoofTop ? "default" : "secondary"} className={unit.isRoofTop ? "bg-green-500" : ""}>
-    {unit.isRoofTop ? "Yes" : "No"}
-  </Badge>
-</TableCell>
-<TableCell>
-  <Badge variant={unit.isMezzanine ? "default" : "secondary"} className={unit.isMezzanine ? "bg-green-500" : ""}>
-    {unit.isMezzanine ? "Yes" : "No"}
-  </Badge>
-</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={unit.status === "OCCUPIED" ? "default" : "secondary"}
-                        >
-                          {unit.status.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                      <Link href={`/dashboard/spaces/${unit.id}`}>
-                        <Button variant='outline'>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </Button>
-                      </Link>
+                  {property.units.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
+                        No space records found
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    property.units.map((unit) => (
+                      <TableRow key={unit.id}>
+                        <TableCell>{unit.unitNumber}</TableCell>
+                        <TableCell>{unit.unitArea.toString()}</TableCell>
+                        <TableCell>{formatCurrency(Number(unit.unitRate))}</TableCell>
+                        <TableCell>{formatCurrency(Number(unit.rentAmount))}</TableCell>
+                        <TableCell>
+                          <Badge variant={unit.isFirstFloor ? "default" : "secondary"} className={unit.isFirstFloor ? "bg-orange-500" : ""}>
+                            {unit.isFirstFloor ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={unit.isSecondFloor ? "default" : "secondary"} className={unit.isSecondFloor ? "bg-orange-500" : ""}>
+                            {unit.isSecondFloor ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={unit.isThirdFloor ? "default" : "secondary"} className={unit.isThirdFloor ? "bg-orange-500" : ""}>
+                            {unit.isThirdFloor ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={unit.isRoofTop ? "default" : "secondary"} className={unit.isRoofTop ? "bg-orange-500" : ""}>
+                            {unit.isRoofTop ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={unit.isMezzanine ? "default" : "secondary"} className={unit.isMezzanine ? "bg-orange-500" : ""}>
+                            {unit.isMezzanine ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={unit.status === "OCCUPIED" ? "default" : "secondary"}
+                          >
+                            {unit.status.toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link href={`/dashboard/spaces/${unit.id}`}>
+                            <Button variant='outline'>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -487,7 +636,17 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
         Manage utility accounts and meters for this property
       </p>
     </div>
-    <AddUtilityDialog propertyId={property.id} />
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        onClick={handleExportUtilitiesCSV}
+        disabled={!property.utilities.length}
+      >
+        <Download className="h-4 w-4 mr-2" />
+        Export to CSV
+      </Button>
+      <AddUtilityDialog propertyId={property.id} />
+    </div>
   </div>
 
   <div className="grid gap-6 md:grid-cols-3">
@@ -556,44 +715,42 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
         </TableRow>
       </TableHeader>
       <TableBody>
-        {property.utilities.map((utility) => (
-          <TableRow key={utility.id}>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                {utility.utilityType === 'WATER' && <Droplets className="h-4 w-4" />}
-                {utility.utilityType === 'ELECTRICITY' && <Power className="h-4 w-4" />}
-                {utility.utilityType === UtilityType.OTHERS && <QuestionMarkCircledIcon className="h-4 w-4" />}
-                <span>{utility.utilityType}</span>
-              </div>
-            </TableCell>
-            <TableCell>{utility.provider}</TableCell>
-            <TableCell className="font-mono">{utility.accountNumber}</TableCell>
-            <TableCell className="font-mono">{utility.meterNumber || "-"}</TableCell>
-            <TableCell>
-              <Badge variant={utility.isActive ? "default" : "secondary"}>
-                {utility.isActive ? "Active" : "Inactive"}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleUtilityStatusChange(utility.id, utility.isActive)}
-              >
-                {utility.isActive ? "Deactivate" : "Activate"}
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-        {property.utilities.length === 0 && (
+        {property.utilities.length === 0 ? (
           <TableRow>
-            <TableCell
-              colSpan={6}
-              className="text-center text-muted-foreground h-24"
-            >
-              No utility accounts found
+            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+              No utility records found
             </TableCell>
           </TableRow>
+        ) : (
+          property.utilities.map((utility) => (
+            <TableRow key={utility.id}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  {utility.utilityType === 'WATER' && <Droplets className="h-4 w-4" />}
+                  {utility.utilityType === 'ELECTRICITY' && <Power className="h-4 w-4" />}
+                  {utility.utilityType === UtilityType.OTHERS && <QuestionMarkCircledIcon className="h-4 w-4" />}
+                  <span>{utility.utilityType}</span>
+                </div>
+              </TableCell>
+              <TableCell>{utility.provider}</TableCell>
+              <TableCell className="font-mono">{utility.accountNumber}</TableCell>
+              <TableCell className="font-mono">{utility.meterNumber || "-"}</TableCell>
+              <TableCell>
+                <Badge variant={utility.isActive ? "default" : "secondary"}>
+                  {utility.isActive ? "Active" : "Inactive"}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleUtilityStatusChange(utility.id, utility.isActive)}
+                >
+                  {utility.isActive ? "Deactivate" : "Activate"}
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))
         )}
       </TableBody>
     </Table>
@@ -603,11 +760,21 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
         <TabsContent value="taxes" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Real Property Taxes</h3>
-            <AddPropertyTaxDialog 
-          propertyId={property.id} 
-          users={users} 
-          currentUserId={currentUserId} 
-        />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleExportTaxesCSV}
+                disabled={!property.propertyTaxes.length}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export to CSV
+              </Button>
+              <AddPropertyTaxDialog 
+                propertyId={property.id} 
+                users={users} 
+                currentUserId={currentUserId} 
+              />
+            </div>
           </div>
           <Card>
             <CardContent className="p-0">
@@ -618,6 +785,7 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
                     <TableHead>Tax Declaration No.</TableHead>
                     <TableHead>Tax Amount</TableHead>
                     <TableHead>Annualy?</TableHead>
+                    <TableHead>Quarterly?</TableHead>
                     <TableHead>Quarter?</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Status</TableHead>
@@ -627,56 +795,63 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
- {/* In the taxes TabsContent, update the TableBody */}
- <TableBody>
-    {property.propertyTaxes?.map((tax) => (
-      <TableRow key={tax.id}>
-        <TableCell>{tax.taxYear}</TableCell>
-        <TableCell>{tax.TaxDecNo.toString()}</TableCell>
-        <TableCell>{formatCurrency(Number(tax.taxAmount))}</TableCell>
-        <TableCell>{tax.isAnnual ? 'Yes' : 'No'}</TableCell>
-        <TableCell>{tax.whatQuarter}</TableCell>
-        <TableCell>{formatDate(tax.dueDate)}</TableCell>
-        <TableCell>
-          <Badge 
-            variant={tax.isPaid ? "default" : "secondary"}
-            className="cursor-pointer hover:opacity-80"
-            onClick={() => handleTaxStatusChange(tax.id, tax.isPaid)}
-          >
-            {tax.isPaid ? "Paid" : "Unpaid"}
-          </Badge>
-        </TableCell>
-        <TableCell>{tax.remarks}</TableCell>
-        <TableCell>
-  {tax.processedBy ? (
-    users.find(user => user.id === tax.processedBy)
-      ? `${users.find(user => user.id === tax.processedBy)?.firstName} ${users.find(user => user.id === tax.processedBy)?.lastName}`
-      : "Unknown User"
-  ) : "-"}
-</TableCell>
-        <TableCell>
-                  {tax.paidDate ? (
-                    <div className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-muted-foreground" />
-                      {format(tax.paidDate, "PPP")}
-                    </div>
+                <TableBody>
+                  {property.propertyTaxes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={12} className="h-24 text-center text-muted-foreground">
+                        No tax records found
+                      </TableCell>
+                    </TableRow>
                   ) : (
-                    "-"
+                    property.propertyTaxes?.map((tax) => (
+                      <TableRow key={tax.id}>
+                        <TableCell>{tax.taxYear}</TableCell>
+                        <TableCell>{tax.TaxDecNo.toString()}</TableCell>
+                        <TableCell>{formatCurrency(Number(tax.taxAmount))}</TableCell>
+                        <TableCell>{tax.isAnnual ? 'Yes' : 'No'}</TableCell>
+                        <TableCell>{tax.isQuarterly ? 'Yes' : 'No'}</TableCell>
+                        <TableCell>{tax.whatQuarter}</TableCell>
+                        <TableCell>{formatDate(tax.dueDate)}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={tax.isPaid ? "default" : "secondary"}
+                            className="cursor-pointer hover:opacity-80"
+                            onClick={() => handleTaxStatusChange(tax.id, tax.isPaid)}
+                          >
+                            {tax.isPaid ? "Paid" : "Unpaid"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{tax.remarks}</TableCell>
+                        <TableCell>
+                          {tax.processedBy ? (
+                            users.find(user => user.id === tax.processedBy)
+                              ? `${users.find(user => user.id === tax.processedBy)?.firstName} ${users.find(user => user.id === tax.processedBy)?.lastName}`
+                              : "Unknown User"
+                          ) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {tax.paidDate ? (
+                            <div className="flex items-center gap-2">
+                              <Receipt className="h-4 w-4 text-muted-foreground" />
+                              {format(tax.paidDate, "PPP")}
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleTaxStatusChange(tax.id, tax.isPaid)}
+                          >
+                            {tax.isPaid ? "Mark as Unpaid" : "Mark as Paid"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
-                </TableCell>
-        <TableCell className="text-right">
-
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => handleTaxStatusChange(tax.id, tax.isPaid)}
-          >
-            {tax.isPaid ? "Mark as Unpaid" : "Mark as Paid"}
-          </Button>
-        </TableCell>
-      </TableRow>
-    ))}
-  </TableBody>
+                </TableBody>
               </Table>
             </CardContent>
           </Card>
@@ -703,23 +878,31 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {property.documents.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell>{doc.name}</TableCell>
-                      <TableCell>
-                        <span className="capitalize">{doc.documentType.toLowerCase()}</span>
-                      </TableCell>
-                      <TableCell>
-                        {doc.uploadedById}
-                      </TableCell>
-                      <TableCell>{formatDate(doc.createdAt)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
+                  {property.documents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                        No document records found
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    property.documents.map((doc) => (
+                      <TableRow key={doc.id}>
+                        <TableCell>{doc.name}</TableCell>
+                        <TableCell>
+                          <span className="capitalize">{doc.documentType.toLowerCase()}</span>
+                        </TableCell>
+                        <TableCell>
+                          {doc.uploadedById}
+                        </TableCell>
+                        <TableCell>{formatDate(doc.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

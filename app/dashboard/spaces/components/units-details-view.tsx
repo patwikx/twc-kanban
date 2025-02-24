@@ -1,4 +1,6 @@
-import { Unit, Property, MaintenanceRequest, Lease, Tenant, UnitTax, UnitUtilityAccount } from "@prisma/client";
+'use server'
+
+import { Unit, Property, MaintenanceRequest, Lease, Tenant, UnitTax, UnitUtilityAccount, User } from "@prisma/client";
 import {
   Card,
   CardContent,
@@ -19,6 +21,10 @@ import { CurrentTenant } from "./current-tenant";
 import { UnitTaxes } from "./unit-taxes";
 import { UnitUtilities } from "./unit-utilities";
 import { EditUnitDialog } from "./edit-unit-dialog";
+import { getUsers } from "@/actions/get-users-property-tax";
+import { getSession } from "next-auth/react";
+import { auth } from "@/auth";
+
 
 interface UnitWithRelations extends Unit {
   property: Property;
@@ -35,13 +41,17 @@ interface UnitDetailsViewProps {
 }
 
 const statusColorMap = {
-  VACANT: "bg-yellow-500",
-  OCCUPIED: "bg-green-500",
-  MAINTENANCE: "bg-blue-500",
+  VACANT: "bg-green-500",
+  OCCUPIED: "bg-blue-500",
+  MAINTENANCE: "bg-red-500",
   RESERVED: "bg-purple-500",
 };
 
-export function UnitDetailsView({ unit }: UnitDetailsViewProps) {
+export async function UnitDetailsView({ unit }: UnitDetailsViewProps) {
+  const users = await getUsers();
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+
   const activeLease = unit.leases.find(lease => lease.status === "ACTIVE");
   const currentTenant = activeLease?.tenant;
 
@@ -49,22 +59,23 @@ export function UnitDetailsView({ unit }: UnitDetailsViewProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-8">
             <Link href="/dashboard/spaces">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Spaces
               </Button>
             </Link>
-            <Badge
+
+          </div>
+          <h2 className="text-2xl font-bold">Space {unit.unitNumber}</h2>
+          <p className="text-muted-foreground">{unit.property.propertyName}</p>
+          <Badge
               variant="secondary"
               className={`${statusColorMap[unit.status]} text-white`}
             >
               {unit.status}
             </Badge>
-          </div>
-          <h2 className="text-2xl font-bold">Space {unit.unitNumber}</h2>
-          <p className="text-muted-foreground">{unit.property.propertyName}</p>
         </div>
         <div className="flex gap-2">
           <EditUnitDialog unit={unit} />
@@ -108,27 +119,29 @@ export function UnitDetailsView({ unit }: UnitDetailsViewProps) {
           </CardContent>
         </Card>
       </div>
-
-      {unit.status === "OCCUPIED" && currentTenant && (
-        <CurrentTenant tenant={currentTenant} lease={activeLease!} />
-      )}
-
-      <Tabs defaultValue="maintenance" className="space-y-4">
+      <Tabs defaultValue="leases" className="space-y-4">
         <TabsList>
+        <TabsTrigger value="leases">Lease History ({unit.leases.length})</TabsTrigger>
+        <TabsTrigger value="taxes">Real Property Taxes ({unit.unitTaxes.length})</TabsTrigger>
+        <TabsTrigger value="utilities">Utilities ({unit.utilityAccounts.length})</TabsTrigger>
+        <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance History ({unit.maintenanceRequests.length})</TabsTrigger>
-          <TabsTrigger value="leases">Lease History ({unit.leases.length})</TabsTrigger>
-          <TabsTrigger value="taxes">Real Property Taxes ({unit.unitTaxes.length})</TabsTrigger>
-          <TabsTrigger value="utilities">Utilities ({unit.utilityAccounts.length})</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+
+
+
         </TabsList>
-        <TabsContent value="maintenance" className="space-y-4">
-          <MaintenanceList requests={unit.maintenanceRequests} />
-        </TabsContent>
         <TabsContent value="leases" className="space-y-4">
           <LeaseHistory leases={unit.leases} />
         </TabsContent>
+        <TabsContent value="maintenance" className="space-y-4">
+          <MaintenanceList requests={unit.maintenanceRequests} />
+        </TabsContent>
         <TabsContent value="taxes" className="space-y-4">
-          <UnitTaxes taxes={unit.unitTaxes} unitId={unit.id} />
+          <UnitTaxes 
+            taxes={unit.unitTaxes}
+            unitId={unit.id}
+            unitNumber={unit.unitNumber}
+          />
         </TabsContent>
         <TabsContent value="utilities" className="space-y-4">
           <UnitUtilities utilities={unit.utilityAccounts} unitId={unit.id} />
@@ -137,6 +150,12 @@ export function UnitDetailsView({ unit }: UnitDetailsViewProps) {
           <UnitDocuments unitId={unit.id} />
         </TabsContent>
       </Tabs>
+
+      {unit.status === "OCCUPIED" && currentTenant && (
+        <CurrentTenant tenant={currentTenant} lease={activeLease!} />
+      )}
+
+
     </div>
   );
 }

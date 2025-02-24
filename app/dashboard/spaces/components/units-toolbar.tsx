@@ -9,9 +9,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UnitStatus } from "@prisma/client";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/utils/export-to-csv";
 
-export function DataTableToolbar() {
+interface DataTableToolbarProps {
+  units: any[]; // Add proper type based on your unit type
+}
+
+export function DataTableToolbar({ units }: DataTableToolbarProps) {  
+  const handleExportUnits = () => {
+    if (!units || units.length === 0) return;
+
+    const exportData = units.map(unit => ({
+      "Space Number": unit.unitNumber,
+      "Property": unit.property.propertyName,
+      "Area (sqm)": unit.unitArea.toString(),
+      "Rate": unit.unitRate.toString(),
+      "Rent Amount": unit.rentAmount.toString(),
+      "First Floor": unit.isFirstFloor ? "Yes" : "No",
+      "Second Floor": unit.isSecondFloor ? "Yes" : "No",
+      "Third Floor": unit.isThirdFloor ? "Yes" : "No",
+      "Rooftop Floor": unit.isRoofTop ? "Yes" : "No",
+      "Mezzanine": unit.isMezzanine ? "Yes" : "No",
+      "Status": unit.status
+    }));
+
+    exportToCSV(exportData, `spaces_`);
+  };
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
@@ -40,6 +65,14 @@ export function DataTableToolbar() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button
+          variant="outline"
+          onClick={handleExportUnits}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export to CSV
+        </Button>
       </div>
     </div>
   );

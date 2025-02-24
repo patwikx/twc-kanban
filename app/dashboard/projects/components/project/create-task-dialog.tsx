@@ -86,8 +86,12 @@ export function CreateTaskDialog({
   const router = useRouter()
   const { toast } = useToast()
 
-  async function onSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    
     try {
       const newTask = await createTask({
         title: formData.get("title") as string,
@@ -98,19 +102,18 @@ export function CreateTaskDialog({
         dueDate: date,
       })
 
-      // Update local state with the new task
       onTaskCreated(newTask)
-
+      
       toast({
-        title: "Task created",
-        description: "Your task has been created successfully.",
+        title: "Success",
+        description: "Task created successfully.",
       })
-
+      
       onOpenChange(false)
     } catch (error) {
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: "Failed to create task. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -130,7 +133,7 @@ export function CreateTaskDialog({
             Add a new task to your project. Fill in the details below.
           </DialogDescription>
         </DialogHeader>
-        <form action={onSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title" className="flex items-center gap-2">
@@ -228,7 +231,11 @@ export function CreateTaskDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="min-w-[120px]">
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="min-w-[120px]"
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

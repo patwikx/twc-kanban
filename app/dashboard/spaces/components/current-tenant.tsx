@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/card";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
-import { Phone, Mail, Building2, Calendar, User, CreditCard, Clock, AlertTriangle } from "lucide-react";
+import { Phone, Mail, Building2, Calendar, User, CreditCard, Clock, AlertTriangle, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useRouter } from "next/navigation";
 
 interface CurrentTenantProps {
   tenant: Tenant;
@@ -32,6 +33,7 @@ export function CurrentTenant({ tenant, lease }: CurrentTenantProps) {
   // Calculate days remaining
   const daysRemaining = Math.ceil((end.getTime() - today.getTime()) / (1000 * 3600 * 24));
   const isExpiringSoon = daysRemaining <= 30;
+  const router = useRouter();
 
   return (
     <Card className="bg-card">
@@ -41,7 +43,7 @@ export function CurrentTenant({ tenant, lease }: CurrentTenantProps) {
             <CardTitle className="text-2xl">Current Tenant</CardTitle>
             <CardDescription>Details of the current occupant</CardDescription>
           </div>
-          <Button variant="outline">View Full Profile</Button>
+          <Button variant="outline" onClick={() => router.push(`/dashboard/tenants?selected=${tenant.id}`)}><Users className="h-4 w-4 mr-2" />View Full Profile</Button>
         </div>
       </CardHeader>
       <CardContent className="p-6">

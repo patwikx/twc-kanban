@@ -1,3 +1,5 @@
+'use client'
+
 import { Lease } from "@prisma/client";
 import {
   Table,
@@ -10,6 +12,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface LeaseHistoryProps {
   leases: (Lease & {
@@ -28,46 +32,89 @@ const statusColorMap = {
 };
 
 export function LeaseHistory({ leases }: LeaseHistoryProps) {
+  const handleExportLeasesCSV = () => {
+    const csvData = leases.map(lease => ({
+      'Tenant': `${lease.tenant.firstName} ${lease.tenant.lastName}`,
+      'Start Date': format(lease.startDate, "PPP"),
+      'End Date': format(lease.endDate, "PPP"),
+      'Rent Amount': Number(lease.rentAmount).toFixed(2),
+      'Status': lease.status
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csvString = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row];
+        return `"${value}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const filename = `lease_history_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Tenant</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
-            <TableHead>Rent Amount</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {leases.map((lease) => (
-            <TableRow key={lease.id}>
-              <TableCell>
-                {lease.tenant.firstName} {lease.tenant.lastName}
-              </TableCell>
-              <TableCell>{format(lease.startDate, "PPP")}</TableCell>
-              <TableCell>{format(lease.endDate, "PPP")}</TableCell>
-              <TableCell>{formatCurrency(Number(lease.rentAmount))}</TableCell>
-              <TableCell>
-                <Badge
-                  variant="secondary"
-                  className={`${statusColorMap[lease.status]} text-white`}
-                >
-                  {lease.status}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-          {leases.length === 0 && (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Lease History</h3>
+        <Button
+          variant="outline"
+          onClick={handleExportLeasesCSV}
+          disabled={!leases.length}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export to CSV
+        </Button>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
-                No lease history found
-              </TableCell>
+              <TableHead>Tenant</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>End Date</TableHead>
+              <TableHead>Rent Amount</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {leases.map((lease) => (
+              <TableRow key={lease.id}>
+                <TableCell>
+                  {lease.tenant.firstName} {lease.tenant.lastName}
+                </TableCell>
+                <TableCell>{format(lease.startDate, "PPP")}</TableCell>
+                <TableCell>{format(lease.endDate, "PPP")}</TableCell>
+                <TableCell>{formatCurrency(Number(lease.rentAmount))}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant="secondary"
+                    className={`${statusColorMap[lease.status]} text-white`}
+                  >
+                    {lease.status}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+            {leases.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  No lease history found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

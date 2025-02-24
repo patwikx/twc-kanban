@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LeaseStatus } from "@prisma/client";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,7 @@ import { z } from "zod";
 import { getAvailableUnits } from "@/actions/units";
 import { createLease } from "@/actions/lease";
 import { Decimal } from "@prisma/client/runtime/library";
-
+import { toast } from "sonner";
 type LeaseFormValues = z.infer<typeof leaseSchema>;
 
 interface AddLeaseDialogProps {
@@ -58,10 +59,12 @@ interface AddLeaseDialogProps {
       propertyName: string;
     };
   }[];
+  onLeaseCreated: (lease: any) => void;
 }
 
-export function AddLeaseDialog({ tenant }: AddLeaseDialogProps) {
+export function AddLeaseDialog({ tenant, onLeaseCreated }: AddLeaseDialogProps) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const [availableUnits, setAvailableUnits] = useState<Array<{
     id: string;
     unitNumber: string;
@@ -75,7 +78,7 @@ export function AddLeaseDialog({ tenant }: AddLeaseDialogProps) {
   const form = useForm<LeaseFormValues>({
     resolver: zodResolver(leaseSchema),
     defaultValues: {
-      status: LeaseStatus.PENDING,
+      status: LeaseStatus.ACTIVE,
     },
   });
 
@@ -108,20 +111,28 @@ export function AddLeaseDialog({ tenant }: AddLeaseDialogProps) {
 
   const { execute: submitForm, loading: isSubmitting } = useAsync(
     async (data: LeaseFormValues) => {
-      const formData = new FormData();
-      formData.append("tenantId", tenant.id);
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          formData.append(key, value.toString());
-        }
-      });
+      try {
+        const formData = new FormData();
+        formData.append("tenantId", tenant.id);
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value.toString());
+          }
+        });
 
-      await createLease(formData);
-      setOpen(false);
-      form.reset();
+        const newLease = await createLease(formData);
+        toast.success("Lease has been created successfully.");
+        setOpen(false);
+        form.reset();
+        onLeaseCreated(newLease);
+        router.refresh();
+      } catch (error) {
+        toast.error("Failed to create lease. Please try again.");
+      }
     },
     {
-      successMessage: "Lease has been created successfully.",
+      showSuccessToast: false,
+      showErrorToast: false,
     }
   );
 

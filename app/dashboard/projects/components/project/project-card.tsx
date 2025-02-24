@@ -94,18 +94,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 )}
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
-            <div className="flex -space-x-2 items-center">
+            <div className="flex space-x-1 items-center">
               {project.members.slice(0, 4).map((member, i) => (
                 <Avatar key={i} className="border-2 border-background w-8 h-8 hover:translate-y-[-2px] transition-transform">
                   {member.user.image ? (

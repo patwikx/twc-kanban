@@ -292,16 +292,22 @@ model Unit {
 }
 
 model UnitTax {
-  id        String    @id @default(cuid())
-  unitId    String
-  taxYear   Int
-  taxDecNo  String
-  taxAmount Decimal   @db.Decimal(12, 2)
-  dueDate   DateTime
-  isPaid    Boolean   @default(false)
-  paidDate  DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  unitId         String
+  taxYear        Int
+  taxDecNo       String
+  taxAmount      Decimal   @db.Decimal(12, 2)
+  isAnnual       Boolean   @default(false)
+  isQuarterly    Boolean   @default(false)
+  whatQuarter    String?
+  remarks        String?
+  processedBy    String?
+  markedAsPaidBy String?
+  dueDate        DateTime
+  isPaid         Boolean   @default(false)
+  paidDate       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)

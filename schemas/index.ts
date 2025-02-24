@@ -78,4 +78,10 @@ export const unitTaxSchema = z.object({
     z.coerce.number().positive("Amount must be greater than 0")
   ),
   dueDate: z.string().min(1, "Due date is required"),
+  isAnnual: z.boolean().default(false),
+  isQuarterly: z.boolean().default(false),
+  whatQuarter: z.string().optional(),
+  processedBy: z.string().optional(),
+  remarks: z.string().optional(),
 });
+

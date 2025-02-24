@@ -32,12 +32,10 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <div className="min-h-screen flex flex-col">
           <Header user={user} />
           <main className="flex-1">
-            <ToastProvider>
-            <Toaster />
             <Providers>
               {children}
+              <Toaster />
               </Providers>
-              </ToastProvider>
           </main>
         </div>
       </body>

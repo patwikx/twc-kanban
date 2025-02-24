@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "sonner"; // Import toast from sonner
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Ban } from "lucide-react";
-import { useAsync } from "@/hooks/use-async";
 import { LeaseWithRelations } from "@/types";
 import { terminateLease } from "@/actions/lease";
 
@@ -36,27 +36,37 @@ type TerminateLeaseFormValues = z.infer<typeof terminateLeaseSchema>;
 
 interface TerminateLeaseDialogProps {
   lease: LeaseWithRelations;
+  onLeaseTerminated: (leaseId: string) => void;
 }
 
-export function TerminateLeaseDialog({ lease }: TerminateLeaseDialogProps) {
+export function TerminateLeaseDialog({ lease, onLeaseTerminated }: TerminateLeaseDialogProps) {
   const [open, setOpen] = useState(false);
   const form = useForm<TerminateLeaseFormValues>({
     resolver: zodResolver(terminateLeaseSchema),
   });
 
-  const { execute: submitForm, loading: isSubmitting } = useAsync(
-    async (data: TerminateLeaseFormValues) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submitForm = async (data: TerminateLeaseFormValues) => {
+    try {
+      setIsSubmitting(true);
+      
       const formData = new FormData();
       formData.append("terminationDate", data.terminationDate);
       formData.append("reason", data.reason);
 
       await terminateLease(lease.id, formData);
+      
+      toast.success("Lease has been terminated successfully.");
       setOpen(false);
-    },
-    {
-      successMessage: "Lease has been terminated successfully.",
+      form.reset();
+      onLeaseTerminated(lease.id);
+    } catch (error) {
+      toast.error("Failed to terminate lease. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-  );
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

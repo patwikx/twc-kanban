@@ -77,7 +77,11 @@ export async function createLease(formData: FormData) {
       entityType: EntityType.LEASE,
     });
 
+    // Revalidate all necessary paths
     revalidatePath("/dashboard/tenants");
+    revalidatePath("/dashboard/spaces");
+    revalidatePath(`/dashboard/tenants/${data.tenantId}`);
+    
     return lease;
   } catch (error) {
     throw new AppError(

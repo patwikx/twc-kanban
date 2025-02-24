@@ -282,7 +282,7 @@ export default async function DashboardPage() {
           title="Total Properties"
           value={stats.totalProperties}
           icon={Building2}
-          description={`${stats.totalUnits} total units`}
+          description={`${stats.totalUnits} total spaces`}
         />
         <StatCard
           title="Occupancy Rate"
