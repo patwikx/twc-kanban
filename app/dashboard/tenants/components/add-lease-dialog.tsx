@@ -88,7 +88,7 @@ export function AddLeaseDialog({ tenant, onLeaseCreated }: AddLeaseDialogProps) 
         setAvailableUnits(units.map(unit => ({
           id: unit.id,
           unitNumber: unit.unitNumber,
-          rentAmount: unit.rentAmount,
+          rentAmount: new Decimal(unit.rentAmount.toString()),
           property: {
             id: unit.property.id,
             propertyName: unit.property.propertyName
