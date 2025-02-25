@@ -17,7 +17,15 @@ import { useNotifications } from '@/hooks/use-notifications';
 
 export function NotificationDrawer() {
   const [open, setOpen] = useState(false);
+  const [displayCount, setDisplayCount] = useState(10);
   const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
+
+  const visibleNotifications = notifications.slice(0, displayCount);
+  const hasMore = displayCount < notifications.length;
+
+  const handleShowMore = () => {
+    setDisplayCount(prev => prev + 10);
+  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -62,13 +70,24 @@ export function NotificationDrawer() {
         <ScrollArea className="h-[calc(100vh-8rem)] pr-4">
           <div className="space-y-4 py-4">
             {notifications.length > 0 ? (
-              notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onMarkAsRead={markAsRead}
-                />
-              ))
+              <>
+                {visibleNotifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkAsRead={markAsRead}
+                  />
+                ))}
+                {hasMore && (
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-4"
+                    onClick={handleShowMore}
+                  >
+                    View More ({notifications.length - displayCount} remaining)
+                  </Button>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <Bell className="h-12 w-12 text-muted-foreground/50" />
