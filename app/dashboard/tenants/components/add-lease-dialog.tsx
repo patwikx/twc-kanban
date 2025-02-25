@@ -68,7 +68,7 @@ export function AddLeaseDialog({ tenant, onLeaseCreated }: AddLeaseDialogProps) 
   const [availableUnits, setAvailableUnits] = useState<Array<{
     id: string;
     unitNumber: string;
-    rentAmount: Decimal;
+    rentAmount: number;  // Changed from Decimal to number
     property: {
       id: string;
       propertyName: string;
@@ -88,7 +88,7 @@ export function AddLeaseDialog({ tenant, onLeaseCreated }: AddLeaseDialogProps) 
         setAvailableUnits(units.map(unit => ({
           id: unit.id,
           unitNumber: unit.unitNumber,
-          rentAmount: new Decimal(unit.rentAmount.toString()),
+          rentAmount: parseFloat(unit.rentAmount.toString()),  // Convert to number
           property: {
             id: unit.property.id,
             propertyName: unit.property.propertyName
