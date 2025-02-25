@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { ProjectTask } from "./project-task"
+import { ProjectTask } from "./project-task-card"
 import { CreateTaskDialog } from "./create-task-dialog"
 
 interface ProjectColumnProps {
