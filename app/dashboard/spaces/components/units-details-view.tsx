@@ -1,7 +1,7 @@
-import { getUsers } from "@/actions/get-users-property-tax";
-import { auth } from "@/auth";
-import { UnitDetailsClientView } from "./unit-details-client-view";
+'use client'
+
 import { Unit, Property, MaintenanceRequest, Lease, Tenant, UnitTax, UnitUtilityAccount, User } from "@prisma/client";
+import { UnitDetailsClientView } from "./unit-details-client-view";
 
 interface UnitWithRelations extends Unit {
   property: Property;
@@ -15,13 +15,11 @@ interface UnitWithRelations extends Unit {
 
 interface UnitDetailsViewProps {
   unit: UnitWithRelations;
+  users: User[];
+  currentUserId: string | undefined;
 }
 
-export async function UnitDetailsView({ unit }: UnitDetailsViewProps) {
-  const users = await getUsers();
-  const session = await auth();
-  const currentUserId = session?.user?.id;
-
+export function UnitDetailsView({ unit, users, currentUserId }: UnitDetailsViewProps) {
   return (
     <UnitDetailsClientView 
       unit={unit}
