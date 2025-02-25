@@ -19,8 +19,11 @@ export async function createPropertyTax(formData: FormData) {
   try {
     // Get all users for global notification
     const users = await prisma.user.findMany({
-      select: { id: true }
+      select: { id: true, firstName: true, lastName: true }
     });
+
+    const creator = users.find(u => u.id === session.user.id);
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown user';
 
     const propertyTax = await prisma.propertyTax.create({
       data: {
@@ -57,7 +60,7 @@ export async function createPropertyTax(formData: FormData) {
         createNotification({
           userId: user.id,
           title: "Property Tax Record Added",
-          message: `Property tax record for ${propertyTax.property.propertyName} (${propertyTax.taxYear}) has been added.`,
+          message: `Property tax record for ${propertyTax.property.propertyName} (${propertyTax.taxYear}) has been added by ${creatorName}`,
           type: NotificationType.TAX,
           entityId: propertyTax.id,
           entityType: EntityType.PROPERTY_TAX,
@@ -85,10 +88,12 @@ export async function updatePropertyTax(id: string, formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
-    // Get all users for global notification
     const users = await prisma.user.findMany({
-      select: { id: true }
+      select: { id: true, firstName: true, lastName: true }
     });
+
+    const updater = users.find(u => u.id === session.user.id);
+    const updaterName = updater ? `${updater.firstName} ${updater.lastName}` : 'Unknown user';
 
     const propertyTax = await prisma.propertyTax.update({
       where: { id },
@@ -123,7 +128,7 @@ export async function updatePropertyTax(id: string, formData: FormData) {
         createNotification({
           userId: user.id,
           title: "Property Tax Record Updated",
-          message: `Property tax record for ${propertyTax.property.propertyName} (${propertyTax.taxYear}) has been updated.`,
+          message: `Property tax record for ${propertyTax.property.propertyName} (${propertyTax.taxYear}) has been updated by ${updaterName}`,
           type: NotificationType.TAX,
           entityId: propertyTax.id,
           entityType: EntityType.PROPERTY_TAX,
@@ -149,10 +154,12 @@ export async function deletePropertyTax(id: string) {
   }
 
   try {
-    // Get all users for global notification
     const users = await prisma.user.findMany({
-      select: { id: true }
+      select: { id: true, firstName: true, lastName: true }
     });
+
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
 
     const propertyTax = await prisma.propertyTax.delete({
       where: { id },
@@ -173,7 +180,7 @@ export async function deletePropertyTax(id: string) {
         createNotification({
           userId: user.id,
           title: "Property Tax Record Deleted",
-          message: `Property tax record for ${propertyTax.property.propertyName} (${propertyTax.taxYear}) has been deleted.`,
+          message: `Property tax record for ${propertyTax.property.propertyName} (${propertyTax.taxYear}) has been deleted by ${deleterName}`,
           type: NotificationType.TAX,
           priority: "HIGH",
           entityId: propertyTax.id,

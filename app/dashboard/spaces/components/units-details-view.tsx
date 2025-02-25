@@ -1,4 +1,4 @@
-'use server'
+'use client'
 
 import { Unit, Property, MaintenanceRequest, Lease, Tenant, UnitTax, UnitUtilityAccount, User } from "@prisma/client";
 import {
@@ -22,7 +22,6 @@ import { UnitTaxes } from "./unit-taxes";
 import { UnitUtilities } from "./unit-utilities";
 import { EditUnitDialog } from "./edit-unit-dialog";
 import { getUsers } from "@/actions/get-users-property-tax";
-import { getSession } from "next-auth/react";
 import { auth } from "@/auth";
 
 
