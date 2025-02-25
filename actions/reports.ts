@@ -52,7 +52,7 @@ export async function getFinancialReports(): Promise<FinancialReport> {
       const propertyRevenue = property.units.reduce((unitAcc, unit) => {
         const unitRevenue = unit.leases.reduce((leaseAcc, lease) => {
           const leaseRevenue = lease.payments.reduce(
-            (paymentAcc, payment) => paymentAcc + payment.amount.toNumber(),
+            (paymentAcc, payment) => paymentAcc + payment.amount,
             0
           )
           return {
@@ -87,7 +87,7 @@ export async function getFinancialReports(): Promise<FinancialReport> {
     (acc, property) => {
       // Property taxes
       const propertyTaxes = property.propertyTaxes.reduce(
-        (sum, tax) => sum + tax.taxAmount.toNumber(),
+        (sum, tax) => sum + tax.taxAmount,
         0
       )
 
@@ -95,7 +95,7 @@ export async function getFinancialReports(): Promise<FinancialReport> {
       const unitTaxes = property.units.reduce(
         (sum, unit) =>
           sum +
-          unit.unitTaxes.reduce((taxSum, tax) => taxSum + tax.taxAmount.toNumber(), 0),
+          unit.unitTaxes.reduce((taxSum, tax) => taxSum + tax.taxAmount, 0),
         0
       )
 
@@ -103,7 +103,7 @@ export async function getFinancialReports(): Promise<FinancialReport> {
       const propertyUtilities = property.utilities.reduce(
         (sum, utility) =>
           sum +
-          utility.bills.reduce((billSum, bill) => billSum + bill.amount.toNumber(), 0),
+          utility.bills.reduce((billSum, bill) => billSum + bill.amount, 0),
         0
       )
 
@@ -115,7 +115,7 @@ export async function getFinancialReports(): Promise<FinancialReport> {
             (accSum, account) =>
               accSum +
               account.bills.reduce(
-                (billSum, bill) => billSum + bill.amount.toNumber(),
+                (billSum, bill) => billSum + bill.amount,
                 0
               ),
             0
@@ -192,7 +192,7 @@ export async function getPropertyReports() {
     titleNo: property.titleNo,
     lotNo: property.lotNo,
     registeredOwner: property.registeredOwner,
-    leasableArea: property.leasableArea.toNumber(),
+    leasableArea: property.leasableArea,
     address: property.address,
     propertyType: property.propertyType,
     totalUnits: property.totalUnits,
@@ -200,16 +200,16 @@ export async function getPropertyReports() {
     createdAt: property.createdAt,
 
     // Financial Summary
-    totalPropertyTaxes: property.propertyTaxes.reduce((sum, tax) => sum + tax.taxAmount.toNumber(), 0),
+    totalPropertyTaxes: property.propertyTaxes.reduce((sum, tax) => sum + tax.taxAmount, 0),
     totalUtilityBills: property.utilities.reduce((sum, utility) => 
-      sum + utility.bills.reduce((billSum, bill) => billSum + bill.amount.toNumber(), 0), 0),
+      sum + utility.bills.reduce((billSum, bill) => billSum + bill.amount, 0), 0),
     
     // Units Summary
     units: property.units.map(unit => ({
       unitNumber: unit.unitNumber,
-      unitArea: unit.unitArea.toNumber(),
-      unitRate: unit.unitRate.toNumber(),
-      rentAmount: unit.rentAmount.toNumber(),
+      unitArea: unit.unitArea,
+      unitRate: unit.unitRate,
+      rentAmount: unit.rentAmount,
       status: unit.status,
       floor: {
         isFirstFloor: unit.isFirstFloor,
@@ -223,8 +223,8 @@ export async function getPropertyReports() {
       leases: unit.leases.map(lease => ({
         startDate: lease.startDate,
         endDate: lease.endDate,
-        rentAmount: lease.rentAmount.toNumber(),
-        securityDeposit: lease.securityDeposit.toNumber(),
+        rentAmount: lease.rentAmount,
+        securityDeposit: lease.securityDeposit,
         status: lease.status,
         tenant: {
           name: `${lease.tenant.firstName} ${lease.tenant.lastName}`,
@@ -233,7 +233,7 @@ export async function getPropertyReports() {
           phone: lease.tenant.phone,
         },
         payments: lease.payments.map(payment => ({
-          amount: payment.amount.toNumber(),
+          amount: payment.amount,
           paymentType: payment.paymentType,
           paymentMethod: payment.paymentMethod,
           paymentStatus: payment.paymentStatus,
@@ -265,7 +265,7 @@ export async function getPropertyReports() {
       taxes: unit.unitTaxes.map(tax => ({
         taxYear: tax.taxYear,
         taxDecNo: tax.taxDecNo,
-        taxAmount: tax.taxAmount.toNumber(),
+        taxAmount: tax.taxAmount,
         dueDate: tax.dueDate,
         isPaid: tax.isPaid,
         paidDate: tax.paidDate,
@@ -277,8 +277,8 @@ export async function getPropertyReports() {
         bills: account.bills.map(bill => ({
           billingPeriodStart: bill.billingPeriodStart,
           billingPeriodEnd: bill.billingPeriodEnd,
-          amount: bill.amount.toNumber(),
-          consumption: bill.consumption?.toNumber(),
+          amount: bill.amount,
+          consumption: bill.consumption,
           isPaid: bill.isPaid,
           paidDate: bill.paidDate,
         })),
@@ -297,7 +297,7 @@ export async function getPropertyReports() {
     propertyTaxes: property.propertyTaxes.map(tax => ({
       taxYear: tax.taxYear,
       taxDecNo: tax.TaxDecNo,
-      taxAmount: tax.taxAmount.toNumber(),
+      taxAmount: tax.taxAmount,
       dueDate: tax.dueDate,
       isPaid: tax.isPaid,
       paidDate: tax.paidDate,
@@ -313,8 +313,8 @@ export async function getPropertyReports() {
       bills: utility.bills.map(bill => ({
         billingPeriodStart: bill.billingPeriodStart,
         billingPeriodEnd: bill.billingPeriodEnd,
-        amount: bill.amount.toNumber(),
-        consumption: bill.consumption?.toNumber(),
+        amount: bill.amount,
+        consumption: bill.consumption,
         isPaid: bill.isPaid,
         paidDate: bill.paidDate,
       })),
@@ -373,13 +373,13 @@ export async function getTenantReports() {
       unit: lease.unit.unitNumber,
       startDate: lease.startDate,
       endDate: lease.endDate,
-      rentAmount: lease.rentAmount.toNumber(),
-      securityDeposit: lease.securityDeposit.toNumber(),
+      rentAmount: lease.rentAmount,
+      securityDeposit: lease.securityDeposit,
       status: lease.status,
       terminationDate: lease.terminationDate,
       terminationReason: lease.terminationReason,
       payments: lease.payments.map(payment => ({
-        amount: payment.amount.toNumber(),
+        amount: payment.amount,
         paymentType: payment.paymentType,
         paymentMethod: payment.paymentMethod,
         paymentStatus: payment.paymentStatus,
@@ -411,7 +411,7 @@ export async function getTenantReports() {
     // Financial Summary
     totalRentPaid: tenant.leases.reduce((sum, lease) => 
       sum + lease.payments.reduce((pSum, payment) => 
-        payment.paymentStatus === 'COMPLETED' ? pSum + payment.amount.toNumber() : pSum, 0), 0),
+        payment.paymentStatus === 'COMPLETED' ? pSum + payment.amount : pSum, 0), 0),
     activeLeases: tenant.leases.filter(lease => lease.status === 'ACTIVE').length,
     totalLeases: tenant.leases.length,
     totalMaintenanceRequests: tenant.maintenanceRequests.length,
@@ -452,9 +452,9 @@ export async function getUnitReports() {
     id: unit.id,
     unitNumber: unit.unitNumber,
     property: unit.property.propertyName,
-    unitArea: unit.unitArea.toNumber(),
-    unitRate: unit.unitRate.toNumber(),
-    rentAmount: unit.rentAmount.toNumber(),
+    unitArea: unit.unitArea,
+    unitRate: unit.unitRate,
+    rentAmount: unit.rentAmount,
     status: unit.status,
     floor: {
       isFirstFloor: unit.isFirstFloor,
@@ -474,13 +474,13 @@ export async function getUnitReports() {
       },
       startDate: lease.startDate,
       endDate: lease.endDate,
-      rentAmount: lease.rentAmount.toNumber(),
-      securityDeposit: lease.securityDeposit.toNumber(),
+      rentAmount: lease.rentAmount,
+      securityDeposit: lease.securityDeposit,
       status: lease.status,
       terminationDate: lease.terminationDate,
       terminationReason: lease.terminationReason,
       payments: lease.payments.map(payment => ({
-        amount: payment.amount.toNumber(),
+        amount: payment.amount,
         paymentType: payment.paymentType,
         paymentMethod: payment.paymentMethod,
         paymentStatus: payment.paymentStatus,
@@ -512,7 +512,7 @@ export async function getUnitReports() {
     taxes: unit.unitTaxes.map(tax => ({
       taxYear: tax.taxYear,
       taxDecNo: tax.taxDecNo,
-      taxAmount: tax.taxAmount.toNumber(),
+      taxAmount: tax.taxAmount,
       dueDate: tax.dueDate,
       isPaid: tax.isPaid,
       paidDate: tax.paidDate,
@@ -526,8 +526,8 @@ export async function getUnitReports() {
       bills: account.bills.map(bill => ({
         billingPeriodStart: bill.billingPeriodStart,
         billingPeriodEnd: bill.billingPeriodEnd,
-        amount: bill.amount.toNumber(),
-        consumption: bill.consumption?.toNumber(),
+        amount: bill.amount,
+        consumption: bill.consumption,
         isPaid: bill.isPaid,
         paidDate: bill.paidDate,
       })),
@@ -536,9 +536,9 @@ export async function getUnitReports() {
     // Financial Summary
     totalRevenue: unit.leases.reduce((sum, lease) => 
       sum + lease.payments.reduce((pSum, payment) => 
-        payment.paymentStatus === 'COMPLETED' ? pSum + payment.amount.toNumber() : pSum, 0), 0),
-    totalTaxes: unit.unitTaxes.reduce((sum, tax) => sum + tax.taxAmount.toNumber(), 0),
+        payment.paymentStatus === 'COMPLETED' ? pSum + payment.amount : pSum, 0), 0),
+    totalTaxes: unit.unitTaxes.reduce((sum, tax) => sum + tax.taxAmount, 0),
     totalUtilities: unit.utilityAccounts.reduce((sum, account) => 
-      sum + account.bills.reduce((billSum, bill) => billSum + bill.amount.toNumber(), 0), 0),
+      sum + account.bills.reduce((billSum, bill) => billSum + bill.amount, 0), 0),
   }))
 }
