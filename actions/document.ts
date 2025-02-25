@@ -69,7 +69,7 @@ export async function createDocument(formData: FormData) {
     if (document.property) {
       notificationMessage += ` for property ${document.property.propertyName}`;
     } else if (document.unit) {
-      notificationMessage += ` for unit ${document.unit.unitNumber} in ${document.unit.property.propertyName}`;
+      notificationMessage += ` for space ${document.unit.unitNumber} in ${document.unit.property.propertyName}`;
     } else if (document.tenant) {
       notificationMessage += ` for tenant ${document.tenant.firstName} ${document.tenant.lastName}`;
     }
@@ -88,7 +88,7 @@ export async function createDocument(formData: FormData) {
       revalidatePath(`/dashboard/properties?selected=${document.propertyId}`);
     }
     if (document.unitId) {
-      revalidatePath(`/dashboard/units?selected=${document.unitId}`);
+      revalidatePath(`/dashboard/spaces?selected=${document.unitId}`);
     }
     if (document.tenantId) {
       revalidatePath(`/dashboard/tenants?selected=${document.tenantId}`);

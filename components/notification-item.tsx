@@ -6,7 +6,7 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import type { Notification } from '@prisma/client';
-import { getNotificationIcon } from '@/lib/utils/notifications';
+import { getNotificationIcon } from '@/lib/utils/ui';
 
 interface NotificationItemProps {
   notification: Notification;

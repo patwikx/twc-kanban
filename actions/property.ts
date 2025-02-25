@@ -16,39 +16,57 @@ export async function createProperty(formData: FormData) {
 
   const data = Object.fromEntries(formData);
   
-  const property = await prisma.property.create({
-    data: {
-      propertyName: data.propertyName as string,
-      propertyCode: data.propertyCode as string,
-      titleNo: data.titleNo as string,
-      lotNo: data.lotNo as string,
-      registeredOwner: data.registeredOwner as string,
-      leasableArea: parseFloat(data.leasableArea as string),
-      address: data.address as string,
-      propertyType: data.propertyType as PropertyType,
-      totalUnits: parseInt(data.totalUnits as string),
-      createdById: session.user.id,
-    },
-  });
+  try {
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
 
-  await createAuditLog({
-    entityId: property.id,
-    entityType: EntityType.PROPERTY,
-    action: "CREATE",
-    changes: data,
-  });
+    const creator = users.find(u => u.id === session.user.id);
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown user';
 
-  await createNotification({
-    userId: session.user.id,
-    title: "New Property Created",
-    message: `Property "${property.propertyName}" has been created successfully.`,
-    type: NotificationType.SYSTEM,
-    entityId: property.id,
-    entityType: EntityType.PROPERTY,
-  });
+    const property = await prisma.property.create({
+      data: {
+        propertyName: data.propertyName as string,
+        propertyCode: data.propertyCode as string,
+        titleNo: data.titleNo as string,
+        lotNo: data.lotNo as string,
+        registeredOwner: data.registeredOwner as string,
+        leasableArea: parseFloat(data.leasableArea as string),
+        address: data.address as string,
+        propertyType: data.propertyType as PropertyType,
+        totalUnits: parseInt(data.totalUnits as string),
+        createdById: session.user.id,
+      },
+    });
 
-  revalidatePath("/dashboard/properties");
-  return property;
+    await createAuditLog({
+      entityId: property.id,
+      entityType: EntityType.PROPERTY,
+      action: "CREATE",
+      changes: data,
+    });
+
+    // Notify all users about the new property
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "New Property Created",
+          message: `Property "${property.propertyName}" has been created by ${creatorName}`,
+          type: NotificationType.PROPERTY,
+          entityId: property.id,
+          entityType: EntityType.PROPERTY,
+          actionUrl: `/dashboard/properties?selected=${property.id}`,
+        })
+      )
+    );
+
+    revalidatePath("/dashboard/properties");
+    return property;
+  } catch (error) {
+    throw new Error("Failed to create property");
+  }
 }
 
 export async function updateProperty(id: string, formData: FormData) {
@@ -59,39 +77,56 @@ export async function updateProperty(id: string, formData: FormData) {
 
   const data = Object.fromEntries(formData);
   
-  const property = await prisma.property.update({
-    where: { id },
-    data: {
-      propertyName: data.propertyName as string,
-      propertyCode: data.propertyCode as string,
-      titleNo: data.titleNo as string,
-      lotNo: data.lotNo as string,
-      registeredOwner: data.registeredOwner as string,
-      leasableArea: parseFloat(data.leasableArea as string),
-      address: data.address as string,
-      propertyType: data.propertyType as PropertyType,
-      totalUnits: parseInt(data.totalUnits as string),
-    },
-  });
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
 
-  await createAuditLog({
-    entityId: property.id,
-    entityType: EntityType.PROPERTY,
-    action: "UPDATE",
-    changes: data,
-  });
+    const updater = users.find(u => u.id === session.user.id);
+    const updaterName = updater ? `${updater.firstName} ${updater.lastName}` : 'Unknown user';
 
-  await createNotification({
-    userId: session.user.id,
-    title: "Property Updated",
-    message: `Property "${property.propertyName}" has been updated successfully.`,
-    type: NotificationType.SYSTEM,
-    entityId: property.id,
-    entityType: EntityType.PROPERTY,
-  });
+    const property = await prisma.property.update({
+      where: { id },
+      data: {
+        propertyName: data.propertyName as string,
+        propertyCode: data.propertyCode as string,
+        titleNo: data.titleNo as string,
+        lotNo: data.lotNo as string,
+        registeredOwner: data.registeredOwner as string,
+        leasableArea: parseFloat(data.leasableArea as string),
+        address: data.address as string,
+        propertyType: data.propertyType as PropertyType,
+        totalUnits: parseInt(data.totalUnits as string),
+      },
+    });
 
-  revalidatePath("/dashboard/properties");
-  return property;
+    await createAuditLog({
+      entityId: property.id,
+      entityType: EntityType.PROPERTY,
+      action: "UPDATE",
+      changes: data,
+    });
+
+    // Notify all users about the property update
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Property Updated",
+          message: `Property "${property.propertyName}" has been updated by ${updaterName}`,
+          type: NotificationType.PROPERTY,
+          entityId: property.id,
+          entityType: EntityType.PROPERTY,
+          actionUrl: `/dashboard/properties?selected=${property.id}`,
+        })
+      )
+    );
+
+    revalidatePath("/dashboard/properties");
+    return property;
+  } catch (error) {
+    throw new Error("Failed to update property");
+  }
 }
 
 export async function deleteProperty(id: string) {
@@ -100,27 +135,45 @@ export async function deleteProperty(id: string) {
     throw new Error("Unauthorized");
   }
 
-  const property = await prisma.property.delete({
-    where: { id },
-  });
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
 
-  await createAuditLog({
-    entityId: property.id,
-    entityType: EntityType.PROPERTY,
-    action: "DELETE",
-  });
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
 
-  await createNotification({
-    userId: session.user.id,
-    title: "Property Deleted",
-    message: `Property "${property.propertyName}" has been deleted successfully.`,
-    type: NotificationType.SYSTEM,
-    entityId: property.id,
-    entityType: EntityType.PROPERTY,
-  });
+    const property = await prisma.property.delete({
+      where: { id },
+    });
 
-  revalidatePath("/dashboard/properties");
-  return property;
+    await createAuditLog({
+      entityId: property.id,
+      entityType: EntityType.PROPERTY,
+      action: "DELETE",
+    });
+
+    // Notify all users about the property deletion
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Property Deleted",
+          message: `Property "${property.propertyName}" has been deleted by ${deleterName}`,
+          type: NotificationType.PROPERTY,
+          priority: "HIGH",
+          entityId: property.id,
+          entityType: EntityType.PROPERTY,
+          actionUrl: `/dashboard/properties`,
+        })
+      )
+    );
+
+    revalidatePath("/dashboard/properties");
+    return property;
+  } catch (error) {
+    throw new Error("Failed to delete property");
+  }
 }
 
 export async function bulkDeleteProperties(ids: string[]) {
@@ -129,46 +182,59 @@ export async function bulkDeleteProperties(ids: string[]) {
     throw new Error("Unauthorized");
   }
 
-  const properties = await prisma.property.findMany({
-    where: {
-      id: {
-        in: ids,
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
+
+    const properties = await prisma.property.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
       },
-    },
-  });
+    });
 
-  await prisma.property.deleteMany({
-    where: {
-      id: {
-        in: ids,
+    await prisma.property.deleteMany({
+      where: {
+        id: {
+          in: ids,
+        },
       },
-    },
-  });
+    });
 
-  await Promise.all(
-    ids.map((id) =>
-      createAuditLog({
-        entityId: id,
-        entityType: EntityType.PROPERTY,
-        action: "DELETE",
-      })
-    )
-  );
+    await Promise.all(
+      ids.map((id) =>
+        createAuditLog({
+          entityId: id,
+          entityType: EntityType.PROPERTY,
+          action: "DELETE",
+        })
+      )
+    );
 
-  await Promise.all(
-    properties.map((property) =>
-      createNotification({
-        userId: session.user.id,
-        title: "Property Deleted",
-        message: `Property "${property.propertyName}" has been deleted successfully.`,
-        type: NotificationType.SYSTEM,
-        entityId: property.id,
-        entityType: EntityType.PROPERTY,
-      })
-    )
-  );
+    // Notify all users about bulk property deletion
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Properties Deleted",
+          message: `${properties.length} properties have been deleted by ${deleterName}`,
+          type: NotificationType.PROPERTY,
+          priority: "HIGH",
+          entityType: EntityType.PROPERTY,
+          actionUrl: `/dashboard/properties`,
+        })
+      )
+    );
 
-  revalidatePath("/dashboard/properties");
+    revalidatePath("/dashboard/properties");
+  } catch (error) {
+    throw new Error("Failed to delete properties");
+  }
 }
 
 export async function exportProperties() {
@@ -248,6 +314,13 @@ export async function importPropertiesFromCSV(formData: FormData) {
     )
   );
 
+  const users = await prisma.user.findMany({
+    select: { id: true, firstName: true, lastName: true }
+  });
+
+  const importer = users.find(u => u.id === session.user.id);
+  const importerName = importer ? `${importer.firstName} ${importer.lastName}` : 'Unknown user';
+
   await Promise.all(
     createdProperties.map(property => 
       Promise.all([
@@ -258,14 +331,17 @@ export async function importPropertiesFromCSV(formData: FormData) {
           changes: property,
           metadata: { source: "CSV_IMPORT" }
         }),
-        createNotification({
-          userId: session.user.id,
-          title: "Property Imported",
-          message: `Property "${property.propertyName}" has been imported successfully.`,
-          type: NotificationType.SYSTEM,
-          entityId: property.id,
-          entityType: EntityType.PROPERTY,
-        })
+        ...users.map(user =>
+          createNotification({
+            userId: user.id,
+            title: "Property Imported",
+            message: `Property "${property.propertyName}" has been imported by ${importerName}`,
+            type: NotificationType.PROPERTY,
+            entityId: property.id,
+            entityType: EntityType.PROPERTY,
+            actionUrl: `/dashboard/properties?selected=${property.id}`,
+          })
+        )
       ])
     )
   );

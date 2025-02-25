@@ -18,7 +18,13 @@ export async function createUnitTax(formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
-    console.log('Creating unit tax with data:', data);
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const creator = users.find(u => u.id === session.user.id);
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown user';
 
     const unitTax = await prisma.unitTax.create({
       data: {
@@ -54,20 +60,25 @@ export async function createUnitTax(formData: FormData) {
       changes: data,
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Property Tax Added",
-      message: `Property tax record has been added for Unit ${unitTax.unit.unitNumber} in ${unitTax.unit.property.propertyName}.`,
-      type: NotificationType.TAX,
-      entityId: unitTax.id,
-      entityType: EntityType.UNIT_TAX,
-    });
+    // Notify all users about the new unit tax
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Unit Tax Added",
+          message: `Real Property Tax record has been added for space ${unitTax.unit.unitNumber} in ${unitTax.unit.property.propertyName} by ${creatorName}.`,
+          type: NotificationType.TAX,
+          entityId: unitTax.id,
+          entityType: EntityType.UNIT_TAX,
+          actionUrl: `/dashboard/spaces/${unitTax.unit.id}`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/spaces");
     return unitTax;
   } catch (error) {
     console.error('Prisma error:', error);
-    
     throw new AppError(
       "Failed to create property tax record",
       500,
@@ -85,6 +96,13 @@ export async function updateUnitTax(id: string, formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const updater = users.find(u => u.id === session.user.id);
+    const updaterName = updater ? `${updater.firstName} ${updater.lastName}` : 'Unknown user';
+
     const unitTax = await prisma.unitTax.update({
       where: { id },
       data: {
@@ -111,14 +129,20 @@ export async function updateUnitTax(id: string, formData: FormData) {
       changes: data,
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Property Tax Updated",
-      message: `Property tax record has been updated for Unit ${unitTax.unit.unitNumber} in ${unitTax.unit.property.propertyName}.`,
-      type: NotificationType.TAX,
-      entityId: unitTax.id,
-      entityType: EntityType.UNIT_TAX,
-    });
+    // Notify all users about the unit tax update
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Unit Tax Updated",
+          message: `Real Property Tax record has been updated for space ${unitTax.unit.unitNumber} in ${unitTax.unit.property.propertyName} by ${updaterName}.`,
+          type: NotificationType.TAX,
+          entityId: unitTax.id,
+          entityType: EntityType.UNIT_TAX,
+          actionUrl: `/dashboard/spaces?/${unitTax.unit.id}`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/spaces");
     return unitTax;
@@ -138,6 +162,13 @@ export async function deleteUnitTax(id: string) {
   }
 
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
+
     const unitTax = await prisma.unitTax.delete({
       where: { id },
       include: {
@@ -155,14 +186,21 @@ export async function deleteUnitTax(id: string) {
       action: "DELETE",
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Property Tax Deleted",
-      message: `Property tax record has been deleted for Unit ${unitTax.unit.unitNumber} in ${unitTax.unit.property.propertyName}.`,
-      type: NotificationType.TAX,
-      entityId: unitTax.id,
-      entityType: EntityType.UNIT_TAX,
-    });
+    // Notify all users about the unit tax deletion
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Unit Tax Deleted",
+          message: `Real Property Tax record has been deleted for space ${unitTax.unit.unitNumber} in ${unitTax.unit.property.propertyName} by ${deleterName}.`,
+          type: NotificationType.TAX,
+          priority: "HIGH",
+          entityId: unitTax.id,
+          entityType: EntityType.UNIT_TAX,
+          actionUrl: `/dashboard/spaces/${unitTax.unit.id}`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/spaces");
     return unitTax;

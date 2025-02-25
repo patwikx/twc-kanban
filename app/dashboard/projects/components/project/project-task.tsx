@@ -36,9 +36,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateTask } from "@/actions/project-kanban/tasks"
-import { useToast } from "@/components/ui/use-toast"
-import {
-  DropdownMenu,
+import { DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -49,6 +47,7 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { toast } from "sonner"
 
 interface ProjectTaskProps {
   task: {
@@ -119,7 +118,7 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [date, setDate] = useState<Date | undefined>(task.dueDate ? new Date(task.dueDate) : undefined)
-  const { toast } = useToast()
+
 
   const PriorityIcon = priorityConfig[task.priority].icon
   const StatusIcon = statusConfig[task.status].icon
@@ -135,18 +134,11 @@ export function ProjectTask({ task, index, projectId }: ProjectTaskProps) {
         dueDate: date,
       })
 
-      toast({
-        title: "Task updated",
-        description: "Your task has been updated successfully.",
-      })
+      toast.success("Task updated successfully")
 
       setIsEditing(false)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Something went wrong. Please try again.")
     } finally {
       setLoading(false)
     }

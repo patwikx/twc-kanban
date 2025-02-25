@@ -42,15 +42,7 @@ export function NotificationDrawer() {
         <SheetHeader className="space-y-2.5">
           <div className="flex items-center justify-between">
             <SheetTitle>Notifications</SheetTitle>
-            {notifications.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAll}
-              >
-                Clear all
-              </Button>
-            )}
+ 
           </div>
           {unreadCount > 0 && (
             <div className="flex items-center justify-between border-b pb-2">

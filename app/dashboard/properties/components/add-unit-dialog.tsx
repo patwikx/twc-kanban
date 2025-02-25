@@ -34,6 +34,7 @@ import { unitSchema } from "@/lib/utils/validation";
 import { createUnit } from "@/actions/units";
 import { Checkbox } from "@/components/ui/checkbox";
 import z from "zod";
+import { toast } from "sonner";
 
 const extendedUnitSchema = unitSchema.extend({
   isFirstFloor: z.boolean().default(false),
@@ -84,20 +85,22 @@ export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
 
   const { execute: submitForm, loading: isSubmitting } = useAsync(
     async (data: UnitFormValues) => {
-      const formData = new FormData();
-      formData.append("propertyId", propertyId);
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          formData.append(key, value.toString());
-        }
-      });
+      try {
+        const formData = new FormData();
+        formData.append("propertyId", propertyId);
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value.toString());
+          }
+        });
 
-      await createUnit(formData);
-      setOpen(false);
-      form.reset();
-    },
-    {
-      successMessage: "Unit has been created successfully.",
+        await createUnit(formData);
+        setOpen(false);
+        form.reset();
+        toast.success("Space has been created successfully");
+      } catch (error) {
+        toast.error("Failed to create space. Please try again.");
+      }
     }
   );
 

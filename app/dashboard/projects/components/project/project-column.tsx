@@ -30,7 +30,6 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ProjectTask } from "./project-task"
 import { CreateTaskDialog } from "./create-task-dialog"

@@ -19,6 +19,11 @@ export async function createLease(formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true }
+    });
+
     // Start a transaction since we need to update multiple records
     const lease = await prisma.$transaction(async (tx) => {
       // Create the lease
@@ -68,14 +73,20 @@ export async function createLease(formData: FormData) {
       changes: data,
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "New Lease Created",
-      message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been created.`,
-      type: NotificationType.LEASE,
-      entityId: lease.id,
-      entityType: EntityType.LEASE,
-    });
+    // Notify all users about the new lease
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "New Lease Created",
+          message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been created.`,
+          type: NotificationType.LEASE,
+          entityId: lease.id,
+          entityType: EntityType.LEASE,
+          actionUrl: `/dashboard/tenants?selected=${lease.tenantId}`,
+        })
+      )
+    );
 
     // Revalidate all necessary paths
     revalidatePath("/dashboard/tenants");
@@ -101,6 +112,11 @@ export async function updateLease(id: string, formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true }
+    });
+
     const lease = await prisma.$transaction(async (tx) => {
       const lease = await tx.lease.update({
         where: { id },
@@ -139,14 +155,20 @@ export async function updateLease(id: string, formData: FormData) {
       changes: data,
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Lease Updated",
-      message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been updated.`,
-      type: NotificationType.LEASE,
-      entityId: lease.id,
-      entityType: EntityType.LEASE,
-    });
+    // Notify all users about the lease update
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Lease Updated",
+          message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been updated.`,
+          type: NotificationType.LEASE,
+          entityId: lease.id,
+          entityType: EntityType.LEASE,
+          actionUrl: `/dashboard/tenants?selected=${lease.tenantId}`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/tenants");
     return lease;
@@ -168,6 +190,11 @@ export async function terminateLease(id: string, formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true }
+    });
+
     const lease = await prisma.$transaction(async (tx) => {
       const lease = await tx.lease.update({
         where: { id },
@@ -202,15 +229,21 @@ export async function terminateLease(id: string, formData: FormData) {
       changes: { status: LeaseStatus.TERMINATED, ...data },
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Lease Terminated",
-      message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been terminated.`,
-      type: NotificationType.LEASE,
-      priority: "HIGH",
-      entityId: lease.id,
-      entityType: EntityType.LEASE,
-    });
+    // Notify all users about the lease termination
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Lease Terminated",
+          message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been terminated.`,
+          type: NotificationType.LEASE,
+          priority: "HIGH",
+          entityId: lease.id,
+          entityType: EntityType.LEASE,
+          actionUrl: `/dashboard/tenants?selected=${lease.tenantId}`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/tenants");
     return lease;
@@ -230,6 +263,11 @@ export async function deleteLease(id: string) {
   }
 
   try {
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true }
+    });
+
     const lease = await prisma.$transaction(async (tx) => {
       const lease = await tx.lease.delete({
         where: { id },
@@ -258,15 +296,21 @@ export async function deleteLease(id: string) {
       action: "DELETE",
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Lease Deleted",
-      message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been deleted.`,
-      type: NotificationType.LEASE,
-      priority: "HIGH",
-      entityId: lease.id,
-      entityType: EntityType.LEASE,
-    });
+    // Notify all users about the lease deletion
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Lease Deleted",
+          message: `Lease for ${lease.tenant.firstName} ${lease.tenant.lastName} at ${lease.unit.property.propertyName} - ${lease.unit.unitNumber} has been deleted.`,
+          type: NotificationType.LEASE,
+          priority: "HIGH",
+          entityId: lease.id,
+          entityType: EntityType.LEASE,
+          actionUrl: `/dashboard/tenants?selected=${lease.tenantId}`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/tenants");
     return lease;

@@ -17,6 +17,14 @@ export async function createUnit(formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const creator = users.find(u => u.id === session.user.id);
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown user';
+
     const unit = await prisma.unit.create({
       data: {
         property: {
@@ -58,20 +66,26 @@ export async function createUnit(formData: FormData) {
       changes: data,
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "New Unit Added",
-      message: `Unit ${unit.unitNumber} has been added to ${unit.property.propertyName}.`,
-      type: NotificationType.UNIT,
-      entityId: unit.id,
-      entityType: EntityType.UNIT,
-    });
+    // Notify all users about the new unit
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "New Space Added",
+          message: `Space ${unit.unitNumber} has been added to ${unit.property.propertyName} by ${creatorName}`,
+          type: NotificationType.UNIT,
+          entityId: unit.id,
+          entityType: EntityType.UNIT,
+          actionUrl: `/dashboard/properties?selected=${data.propertyId}`,
+        })
+      )
+    );
 
-    revalidatePath(`/dashboard/properties?selected=${data.propertyId}`);
+    revalidatePath(`/dashboard/properties/${data.propertyId}`);
     return unit;
   } catch (error) {
     throw new AppError(
-      "Failed to create unit. Please try again.",
+      "Failed to create space. Please try again.",
       500
     );
   }
@@ -86,6 +100,13 @@ export async function updateUnit(id: string, formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const updater = users.find(u => u.id === session.user.id);
+    const updaterName = updater ? `${updater.firstName} ${updater.lastName}` : 'Unknown user';
+
     const unit = await prisma.unit.update({
       where: { id },
       data: {
@@ -113,20 +134,26 @@ export async function updateUnit(id: string, formData: FormData) {
       changes: data,
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Unit Updated",
-      message: `Unit ${unit.unitNumber} in ${unit.property.propertyName} has been updated.`,
-      type: NotificationType.UNIT,
-      entityId: unit.id,
-      entityType: EntityType.UNIT,
-    });
+    // Notify all users about the unit update
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Space Updated",
+          message: `Space ${unit.unitNumber} in ${unit.property.propertyName} has been updated by ${updaterName}`,
+          type: NotificationType.UNIT,
+          entityId: unit.id,
+          entityType: EntityType.UNIT,
+          actionUrl: `/dashboard/properties?selected=${unit.propertyId}`,
+        })
+      )
+    );
 
-    revalidatePath(`/dashboard/properties?selected=${unit.propertyId}`);
+    revalidatePath(`/dashboard/properties/${unit.propertyId}`);
     return unit;
   } catch (error) {
     throw new AppError(
-      "Failed to update unit. Please try again.",
+      "Failed to update space. Please try again.",
       500
     );
   }
@@ -139,6 +166,13 @@ export async function deleteUnit(id: string) {
   }
 
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
+
     const unit = await prisma.unit.delete({
       where: { id },
       include: {
@@ -162,20 +196,27 @@ export async function deleteUnit(id: string) {
       action: "DELETE",
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Unit Deleted",
-      message: `Unit ${unit.unitNumber} has been deleted from ${unit.property.propertyName}.`,
-      type: NotificationType.UNIT,
-      entityId: unit.id,
-      entityType: EntityType.UNIT,
-    });
+    // Notify all users about the unit deletion
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Space Deleted",
+          message: `Space ${unit.unitNumber} has been deleted from ${unit.property.propertyName} by ${deleterName}`,
+          type: NotificationType.UNIT,
+          priority: "HIGH",
+          entityId: unit.id,
+          entityType: EntityType.UNIT,
+          actionUrl: `/dashboard/properties?selected=${unit.propertyId}`,
+        })
+      )
+    );
 
-    revalidatePath(`dashboard/properties?selected=${unit.propertyId}`);
+    revalidatePath(`/dashboard/properties/${unit.propertyId}`);
     return unit;
   } catch (error) {
     throw new AppError(
-      "Failed to delete unit. Please try again.",
+      "Failed to delete space. Please try again.",
       500
     );
   }
@@ -201,7 +242,7 @@ export async function getAvailableUnits() {
     });
   } catch (error) {
     throw new AppError(
-      "Failed to fetch available units",
+      "Failed to fetch available spaces",
       500,
       "UNIT_FETCH_ERROR"
     );
@@ -215,6 +256,13 @@ export async function bulkDeleteUnits(ids: string[]) {
   }
   
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
+
     const units = await prisma.unit.findMany({
       where: {
         id: {
@@ -244,14 +292,15 @@ export async function bulkDeleteUnits(ids: string[]) {
       )
     );
     
+    // Notify all users about bulk unit deletion
     await Promise.all(
-      units.map((unit) =>
+      users.map(user =>
         createNotification({
-          userId: session.user.id,
-          title: "Unit Deleted",
-          message: `Unit ${unit.unitNumber} has been deleted from ${unit.property.propertyName}.`,
+          userId: user.id,
+          title: "Spaces Deleted",
+          message: `${units.length} spaces have been deleted by ${deleterName}`,
           type: NotificationType.UNIT,
-          entityId: unit.id,
+          priority: "HIGH",
           entityType: EntityType.UNIT,
         })
       )

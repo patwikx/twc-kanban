@@ -3,6 +3,9 @@
 import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { createNotification } from "@/lib/utils/notifications"
+import { createAuditLog } from "@/lib/audit"
+import { EntityType, NotificationType } from "@prisma/client"
 
 export type CreateTaskInput = {
   title: string
@@ -21,6 +24,22 @@ export async function createTask(input: CreateTaskInput) {
   }
 
   try {
+    // First get project members to notify them
+    const project = await prisma.project.findUnique({
+      where: { id: input.projectId },
+      include: {
+        members: {
+          include: {
+            user: true
+          }
+        }
+      }
+    })
+
+    if (!project) {
+      throw new Error("Project not found")
+    }
+
     // Get the highest order in the column
     const lastTask = await prisma.task.findFirst({
       where: { columnId: input.columnId },
@@ -48,14 +67,8 @@ export async function createTask(input: CreateTaskInput) {
         }
       },
       include: {
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            image: true
-          }
-        },
+        assignedTo: true,
+        project: true, // Include project details
         labels: true,
         _count: {
           select: {
@@ -66,9 +79,48 @@ export async function createTask(input: CreateTaskInput) {
       }
     })
 
+    // Create audit log
+    await createAuditLog({
+      entityId: task.id,
+      entityType: EntityType.TASK,
+      action: "CREATE",
+      changes: input,
+    })
+
+    // Notify only project members about the new task
+    await Promise.all(
+      project.members.map(member =>
+        createNotification({
+          userId: member.user.id,
+          title: "New Task Created",
+          message: `New task "${task.title}" has been created in project "${project.name}"`,
+          type: NotificationType.SYSTEM,
+          priority: input.priority === "URGENT" ? "HIGH" : "MEDIUM",
+          entityId: task.id,
+          entityType: EntityType.TASK,
+          actionUrl: `/dashboard/projects/${input.projectId}`,
+        })
+      )
+    )
+
+    // Additional notification for assigned user if different from creator
+    if (task.assignedToId && task.assignedToId !== session.user.id) {
+      await createNotification({
+        userId: task.assignedToId,
+        title: "Task Assignment",
+        message: `You have been assigned to task: ${task.title}`,
+        type: NotificationType.SYSTEM,
+        priority: "HIGH",
+        entityId: task.id,
+        entityType: EntityType.TASK,
+        actionUrl: `/dashboard/projects/${input.projectId}`,
+      })
+    }
+
     revalidatePath(`/dashboard/projects/${input.projectId}`)
     return task
   } catch (error) {
+    console.error('Error in createTask:', error);
     throw new Error("Failed to create task")
   }
 }
@@ -105,8 +157,46 @@ export async function updateTask(taskId: string, projectId: string, input: Updat
             userId: session.user.id
           }
         }
+      },
+      include: {
+        assignedTo: true
       }
     })
+
+    // Create audit log
+    await createAuditLog({
+      entityId: task.id,
+      entityType: EntityType.TASK,
+      action: "UPDATE",
+      changes: input,
+    })
+
+    // Create notification for status changes
+    if (input.status) {
+      await createNotification({
+        userId: task.assignedToId || session.user.id,
+        title: "Task Status Updated",
+        message: `Task "${task.title}" status changed to ${input.status}`,
+        type: NotificationType.SYSTEM,
+        entityId: task.id,
+        entityType: EntityType.TASK,
+        actionUrl: `/dashboard/projects/${projectId}`,
+      })
+    }
+
+    // Notify new assignee if changed
+    if (input.assignedToId && input.assignedToId !== task.assignedTo?.id) {
+      await createNotification({
+        userId: input.assignedToId,
+        title: "New Task Assignment",
+        message: `You have been assigned to task: ${task.title}`,
+        type: NotificationType.SYSTEM,
+        priority: "HIGH",
+        entityId: task.id,
+        entityType: EntityType.TASK,
+        actionUrl: `/dashboard/projects/${projectId}`,
+      })
+    }
 
     revalidatePath(`/dashboard/projects/${projectId}`)
     return task
@@ -122,12 +212,34 @@ export async function deleteTask(taskId: string, projectId: string) {
   }
 
   try {
-    await prisma.task.delete({
+    const task = await prisma.task.delete({
       where: {
         id: taskId,
         projectId: projectId
+      },
+      include: {
+        assignedTo: true
       }
     })
+
+    // Create audit log
+    await createAuditLog({
+      entityId: task.id,
+      entityType: EntityType.TASK,
+      action: "DELETE",
+    })
+
+    // Notify assigned user about task deletion
+    if (task.assignedToId) {
+      await createNotification({
+        userId: task.assignedToId,
+        title: "Task Deleted",
+        message: `Task "${task.title}" has been deleted`,
+        type: NotificationType.SYSTEM,
+        entityId: task.id,
+        entityType: EntityType.TASK,
+      })
+    }
 
     revalidatePath(`/dashboard/projects/${projectId}`)
   } catch (error) {

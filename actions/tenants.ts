@@ -95,56 +95,63 @@ export async function getTenants() {
   }
 
 export async function createTenant(formData: FormData) {
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new AppError("Unauthorized", 401);
-    }
-  
-    const data = Object.fromEntries(formData);
-    
-    try {
-      const tenant = await prisma.tenant.create({
-        data: {
-          bpCode: data.bpCode as string,
-          firstName: data.firstName as string,
-          lastName: data.lastName as string,
-          email: data.email as string,
-          phone: data.phone as string,
-          company: data.company as string,
-          status: data.status as TenantStatus,
-          emergencyContactName: data.emergencyContactName as string || null,
-          emergencyContactPhone: data.emergencyContactPhone as string || null,
-          createdById: session.user.id, // Add this line
-        },
-      });
-  
-      await createAuditLog({
-        entityId: tenant.id,
-        entityType: EntityType.TENANT,
-        action: "CREATE",
-        changes: data,
-      });
-  
-      await createNotification({
-        userId: session.user.id,
-        title: "New Tenant Created",
-        message: `Tenant ${tenant.firstName} ${tenant.lastName} has been created successfully.`,
-        type: NotificationType.TENANT,
-        entityId: tenant.id,
-        entityType: EntityType.TENANT,
-      });
-  
-      revalidatePath("/dashboard/tenants"); // Fix the path
-      return tenant;
-    } catch (error) {
-      console.error("Tenant creation error:", error); // Add error logging
-      throw new AppError(
-        "Failed to create tenant. Please try again.",
-        500,
-        "TENANT_CREATE_ERROR"
-      );
-    }
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
   }
+
+  try {
+    // Get all users for global notification
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const creator = users.find(u => u.id === session.user.id);
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown user';
+
+    const tenant = await prisma.tenant.create({
+      data: {
+        bpCode: formData.get('bpCode') as string,
+        firstName: formData.get('firstName') as string,
+        lastName: formData.get('lastName') as string,
+        email: formData.get('email') as string,
+        phone: formData.get('phone') as string,
+        company: formData.get('company') as string,
+        status: formData.get('status') as TenantStatus,
+        emergencyContactName: formData.get('emergencyContactName') as string || null,
+        emergencyContactPhone: formData.get('emergencyContactPhone') as string || null,
+        createdById: session.user.id,
+      },
+    });
+
+    await createAuditLog({
+      entityId: tenant.id,
+      entityType: EntityType.TENANT,
+      action: "CREATE",
+      changes: Object.fromEntries(formData),
+    });
+
+    // Notify all users about the new tenant
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "New Tenant Added",
+          message: `New tenant ${tenant.firstName} ${tenant.lastName} has been added by ${creatorName}`,
+          type: NotificationType.TENANT,
+          entityId: tenant.id,
+          entityType: EntityType.TENANT,
+          actionUrl: `/dashboard/tenants?=selected${tenant.id}`,
+        })
+      )
+    );
+
+    revalidatePath("/dashboard/tenants");
+    return tenant;
+  } catch (error) {
+    throw new Error("Failed to create tenant");
+  }
+}
 
 export async function updateTenant(id: string, formData: FormData) {
   const session = await auth();
@@ -155,6 +162,13 @@ export async function updateTenant(id: string, formData: FormData) {
   const data = Object.fromEntries(formData);
   
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const updater = users.find(u => u.id === session.user.id);
+    const updaterName = updater ? `${updater.firstName} ${updater.lastName}` : 'Unknown user';
+
     const tenant = await prisma.tenant.update({
       where: { id },
       data: {
@@ -177,14 +191,20 @@ export async function updateTenant(id: string, formData: FormData) {
       changes: data,
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Tenant Updated",
-      message: `Tenant ${tenant.firstName} ${tenant.lastName} has been updated successfully.`,
-      type: NotificationType.TENANT,
-      entityId: tenant.id,
-      entityType: EntityType.TENANT,
-    });
+    // Notify all users about the tenant update
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Tenant Updated",
+          message: `Tenant ${tenant.firstName} ${tenant.lastName} has been updated by ${updaterName}`,
+          type: NotificationType.TENANT,
+          entityId: tenant.id,
+          entityType: EntityType.TENANT,
+          actionUrl: `/dashboard/tenants?=selected${tenant.id}`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/tenants");
     return tenant;
@@ -204,6 +224,13 @@ export async function deleteTenant(id: string) {
   }
 
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
+
     const tenant = await prisma.tenant.delete({
       where: { id },
     });
@@ -214,14 +241,21 @@ export async function deleteTenant(id: string) {
       action: "DELETE",
     });
 
-    await createNotification({
-      userId: session.user.id,
-      title: "Tenant Deleted",
-      message: `Tenant ${tenant.firstName} ${tenant.lastName} has been deleted successfully.`,
-      type: NotificationType.TENANT,
-      entityId: tenant.id,
-      entityType: EntityType.TENANT,
-    });
+    // Notify all users about the tenant deletion
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "Tenant Deleted",
+          message: `Tenant ${tenant.firstName} ${tenant.lastName} has been deleted by ${deleterName}`,
+          type: NotificationType.TENANT,
+          priority: "HIGH",
+          entityId: tenant.id,
+          entityType: EntityType.TENANT,
+          actionUrl: `/dashboard/tenants`,
+        })
+      )
+    );
 
     revalidatePath("/dashboard/tenants");
     return tenant;
@@ -241,6 +275,13 @@ export async function bulkDeleteTenants(ids: string[]) {
   }
 
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const deleter = users.find(u => u.id === session.user.id);
+    const deleterName = deleter ? `${deleter.firstName} ${deleter.lastName}` : 'Unknown user';
+
     const tenants = await prisma.tenant.findMany({
       where: {
         id: {
@@ -267,15 +308,17 @@ export async function bulkDeleteTenants(ids: string[]) {
       )
     );
 
+    // Notify all users about bulk tenant deletion
     await Promise.all(
-      tenants.map((tenant) =>
+      users.map(user =>
         createNotification({
-          userId: session.user.id,
-          title: "Tenant Deleted",
-          message: `Tenant ${tenant.firstName} ${tenant.lastName} has been deleted successfully.`,
+          userId: user.id,
+          title: "Tenants Deleted",
+          message: `${tenants.length} tenants have been deleted by ${deleterName}`,
           type: NotificationType.TENANT,
-          entityId: tenant.id,
+          priority: "HIGH",
           entityType: EntityType.TENANT,
+          actionUrl: `/dashboard/tenants`,
         })
       )
     );
@@ -312,6 +355,13 @@ export async function importTenantsFromCSV(formData: FormData) {
   const headerArray = headers.split(',').map(h => h.trim());
 
   try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true }
+    });
+
+    const importer = users.find(u => u.id === session.user.id);
+    const importerName = importer ? `${importer.firstName} ${importer.lastName}` : 'Unknown user';
+
     const tenants = rows.map(row => {
       const values = row.split(',').map(v => v.trim());
       const tenant = headerArray.reduce((obj, header, index) => {
@@ -351,14 +401,17 @@ export async function importTenantsFromCSV(formData: FormData) {
             changes: tenant,
             metadata: { source: "CSV_IMPORT" }
           }),
-          createNotification({
-            userId: session.user.id,
-            title: "Tenant Imported",
-            message: `Tenant ${tenant.firstName} ${tenant.lastName} has been imported successfully.`,
-            type: NotificationType.TENANT,
-            entityId: tenant.id,
-            entityType: EntityType.TENANT,
-          })
+          ...users.map(user =>
+            createNotification({
+              userId: user.id,
+              title: "Tenant Imported",
+              message: `Tenant ${tenant.firstName} ${tenant.lastName} has been imported by ${importerName}`,
+              type: NotificationType.TENANT,
+              entityId: tenant.id,
+              entityType: EntityType.TENANT,
+              actionUrl: `/dashboard/tenants?=selected${tenant.id}`,
+            })
+          )
         ])
       )
     );

@@ -37,7 +37,6 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { z } from 'zod';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +48,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export const revalidate = 0;
 
@@ -119,12 +119,8 @@ export function TenantDetails({ tenant: initialTenant }: TenantDetailsProps) {
   const { execute: handleDelete, loading: isDeleting } = useAsync(
     async () => {
       await deleteTenant(tenant.id);
-      toast({
-        title: "Success",
-        description: "Tenant has been deleted successfully.",
-        variant: "default",
-      });
-      router.push("/tenants");
+      toast.success("Tenant has been deleted successfully.");
+      router.push("/dashboard/tenants");
     },
     {
       showSuccessToast: false,
@@ -144,20 +140,18 @@ export function TenantDetails({ tenant: initialTenant }: TenantDetailsProps) {
         });
   
         await updateTenant(tenant.id, formData);
-        toast({
-          title: "Success",
-          description: "Tenant details have been updated successfully.",
-          variant: "default",
-        });
+        
+        // Update local state with new values
+        setTenant(prev => ({
+          ...prev,
+          ...values
+        }));
+
+        toast.success("Tenant details have been updated successfully.");
         setIsEditing(false);
-        form.reset();
-        router.refresh();
+        form.reset(values); // Reset form with new values
       } catch (error) {
-        toast({
-          title: "Error",
-          description: (error instanceof Error ? error.message : "Failed to update tenant details. Please try again."),
-          variant: "destructive",
-        });
+        toast.error("Failed to update tenant details. Please try again.");
       }
     },
     {
@@ -501,7 +495,7 @@ export function TenantDetails({ tenant: initialTenant }: TenantDetailsProps) {
           </Dialog>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9">
+              <Button variant="destructive" size="icon" className="h-9 w-9">
                 <Trash className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
@@ -576,16 +570,6 @@ export function TenantDetails({ tenant: initialTenant }: TenantDetailsProps) {
             <p className="text-sm text-muted-foreground">
               Comprehensive tenant details and contact information
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Details
-            </Button>
-            <Button>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              View Full Profile
-            </Button>
           </div>
         </div>
       </CardHeader>

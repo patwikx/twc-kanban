@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { updateUnitTaxStatus } from "@/lib/data/unit-tax";
 import { AddUnitTaxDialog } from "./add-unit-tax-modal";
 import { User } from "@prisma/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UnitTaxesProps {
   taxes?: UnitTax[];
@@ -59,12 +60,65 @@ export function UnitTaxes({ taxes = [], unitId, unitNumber }: UnitTaxesProps) {
     fetchData();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-48" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tax Year</TableHead>
+                <TableHead>Tax Dec. No.</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Annually?</TableHead>
+                <TableHead>Quarterly?</TableHead>
+                <TableHead>Quarter</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Processed By</TableHead>
+                <TableHead>Remarks</TableHead>
+                <TableHead>Payment Date</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(3)].map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  }
 
   const handleStatusChange = async (id: string, currentStatus: boolean) => {
     try {
+      const currentUser = users.find(u => u.id === currentUserId);
+      const userFullName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown user';
+      
       await updateUnitTaxStatus(id, !currentStatus);
-      toast.success("Tax status updated successfully");
+      toast.success(`Tax status updated by ${userFullName}`);
     } catch (error) {
       toast.error("Failed to update tax status");
     }
@@ -198,7 +252,7 @@ export function UnitTaxes({ taxes = [], unitId, unitNumber }: UnitTaxesProps) {
             {(!taxes || taxes.length === 0) && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={12}
                   className="text-center text-muted-foreground h-24"
                 >
                   No tax records found

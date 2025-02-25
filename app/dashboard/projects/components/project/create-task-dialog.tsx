@@ -27,7 +27,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { useToast } from "@/components/ui/use-toast"
 import { createTask } from "@/actions/project-kanban/tasks"
 import { 
   CalendarIcon, 
@@ -42,6 +41,7 @@ import {
   Plus
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface CreateTaskDialogProps {
   open: boolean
@@ -83,8 +83,7 @@ export function CreateTaskDialog({
 }: CreateTaskDialogProps) {
   const [loading, setLoading] = useState(false)
   const [date, setDate] = useState<Date>()
-  const router = useRouter()
-  const { toast } = useToast()
+
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -104,18 +103,11 @@ export function CreateTaskDialog({
 
       onTaskCreated(newTask)
       
-      toast({
-        title: "Success",
-        description: "Task created successfully.",
-      })
+     toast.success("Task created successfully")
       
       onOpenChange(false)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create task. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Failed to create task. Please try again.")
     } finally {
       setLoading(false)
     }

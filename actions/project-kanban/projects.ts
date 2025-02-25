@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { createNotification } from "@/lib/utils/notifications"
+import { createAuditLog } from "@/lib/audit"
+import { EntityType, NotificationType } from "@prisma/client"
 
 export type CreateProjectInput = {
   name: string
@@ -24,6 +27,11 @@ export async function createProject(input: CreateProjectInput) {
   console.log("Session user:", session.user)
 
   try {
+    // Get all users
+    const users = await prisma.user.findMany({
+      select: { id: true }
+    });
+
     const project = await prisma.project.create({
       data: {
         name: input.name,
@@ -55,6 +63,29 @@ export async function createProject(input: CreateProjectInput) {
         }
       }
     })
+
+    // Create audit log
+    await createAuditLog({
+      entityId: project.id,
+      entityType: EntityType.PROJECT,
+      action: "CREATE",
+      changes: input,
+    })
+
+    // Create notification for all users
+    await Promise.all(
+      users.map(user =>
+        createNotification({
+          userId: user.id,
+          title: "New Project Created",
+          message: `Project "${project.name}" has been created by ${session.user.firstName} ${session.user.lastName}`,
+          type: NotificationType.SYSTEM,
+          entityId: project.id,
+          entityType: EntityType.PROJECT,
+          actionUrl: `/dashboard/projects/${project.id}`,
+        })
+      )
+    )
 
     console.log("Created project:", project)
     revalidatePath("/dashboard/projects")
@@ -238,8 +269,38 @@ export async function updateProject(projectId: string, input: UpdateProjectInput
         id: projectId,
         ownerId: session.user.id
       },
-      data: input
+      data: input,
+      include: {
+        members: {
+          include: {
+            user: true
+          }
+        }
+      }
     })
+
+    // Create audit log
+    await createAuditLog({
+      entityId: project.id,
+      entityType: EntityType.PROJECT,
+      action: "UPDATE",
+      changes: input,
+    })
+
+    // Notify all project members about the update
+    await Promise.all(
+      project.members.map(member =>
+        createNotification({
+          userId: member.user.id,
+          title: "Project Updated",
+          message: `Project "${project.name}" has been updated`,
+          type: NotificationType.SYSTEM,
+          entityId: project.id,
+          entityType: EntityType.PROJECT,
+          actionUrl: `/dashboard/projects/${project.id}`,
+        })
+      )
+    )
 
     revalidatePath(`/dashboard/projects/${projectId}`)
     return project
@@ -255,12 +316,41 @@ export async function deleteProject(projectId: string) {
   }
 
   try {
-    await prisma.project.delete({
+    const project = await prisma.project.delete({
       where: {
         id: projectId,
         ownerId: session.user.id
+      },
+      include: {
+        members: {
+          include: {
+            user: true
+          }
+        }
       }
     })
+
+    // Create audit log
+    await createAuditLog({
+      entityId: project.id,
+      entityType: EntityType.PROJECT,
+      action: "DELETE",
+    })
+
+    // Notify all project members about the deletion
+    await Promise.all(
+      project.members.map(member =>
+        createNotification({
+          userId: member.user.id,
+          title: "Project Deleted",
+          message: `Project "${project.name}" has been deleted`,
+          type: NotificationType.SYSTEM,
+          priority: "HIGH",
+          entityId: project.id,
+          entityType: EntityType.PROJECT,
+        })
+      )
+    )
 
     revalidatePath("/projects")
     redirect("/dashboard/projects")
