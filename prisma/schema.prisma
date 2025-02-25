@@ -226,7 +226,7 @@ model Property {
   titleNo         String
   lotNo           String
   registeredOwner String
-  leasableArea    Decimal      @db.Decimal(12, 2)
+  leasableArea    Float
   address         String
   propertyType    PropertyType
   totalUnits      Int?         @default(0)
@@ -247,7 +247,7 @@ model PropertyTax {
   propertyId     String
   taxYear        Int
   TaxDecNo       String
-  taxAmount      Decimal   @db.Decimal(12, 2)
+  taxAmount      Float
   dueDate        DateTime
   isPaid         Boolean   @default(false)
   remarks        String?
@@ -268,9 +268,9 @@ model Unit {
   id            String     @id @default(cuid())
   propertyId    String
   unitNumber    String     @unique
-  unitArea      Decimal    @db.Decimal(12, 2)
-  unitRate      Decimal    @db.Decimal(10, 2)
-  rentAmount    Decimal    @db.Decimal(10, 2)
+  unitArea      Float
+  unitRate      Float
+  rentAmount    Float
   isFirstFloor  Boolean    @default(false)
   isSecondFloor Boolean    @default(false)
   isThirdFloor  Boolean    @default(false)
@@ -296,7 +296,7 @@ model UnitTax {
   unitId         String
   taxYear        Int
   taxDecNo       String
-  taxAmount      Decimal   @db.Decimal(12, 2)
+  taxAmount      Float
   isAnnual       Boolean   @default(false)
   isQuarterly    Boolean   @default(false)
   whatQuarter    String?
@@ -351,8 +351,8 @@ model UtilityBill {
   billingPeriodStart   DateTime
   billingPeriodEnd     DateTime
   dueDate              DateTime
-  amount               Decimal   @db.Decimal(10, 2)
-  consumption          Decimal?  @db.Decimal(10, 2)
+  amount               Float
+  consumption          Float?
   isPaid               Boolean   @default(false)
   paidDate             DateTime?
   createdAt            DateTime  @default(now())
@@ -392,8 +392,8 @@ model Lease {
   tenantId          String
   startDate         DateTime
   endDate           DateTime
-  rentAmount        Decimal     @db.Decimal(10, 2)
-  securityDeposit   Decimal     @db.Decimal(10, 2)
+  rentAmount        Float
+  securityDeposit   Float
   status            LeaseStatus @default(PENDING)
   terminationDate   DateTime?
   terminationReason String?
@@ -428,7 +428,7 @@ model MaintenanceRequest {
 model Payment {
   id            String        @id @default(cuid())
   leaseId       String
-  amount        Decimal       @db.Decimal(10, 2)
+  amount        Float
   paymentType   PaymentType
   paymentMethod PaymentMethod
   paymentStatus PaymentStatus

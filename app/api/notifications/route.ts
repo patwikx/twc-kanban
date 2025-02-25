@@ -9,8 +9,6 @@ export async function GET() {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    console.log('Fetching notifications for user:', session.user.id);
-
     const notifications = await prisma.notification.findMany({
       where: {
         userId: session.user.id,
@@ -27,11 +25,9 @@ export async function GET() {
       take: 50,
     });
 
-    console.log('Found notifications:', notifications);
 
     return NextResponse.json(notifications);
   } catch (error) {
-    console.error('Error fetching notifications:', error);
     return new NextResponse('Internal Error', { status: 500 });
   }
 }
