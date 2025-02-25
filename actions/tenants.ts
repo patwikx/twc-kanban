@@ -141,7 +141,7 @@ export async function createTenant(formData: FormData) {
           type: NotificationType.TENANT,
           entityId: tenant.id,
           entityType: EntityType.TENANT,
-          actionUrl: `/dashboard/tenants?=selected${tenant.id}`,
+          actionUrl: `/dashboard/tenants?selected=${tenant.id}`,
         })
       )
     );
@@ -201,7 +201,7 @@ export async function updateTenant(id: string, formData: FormData) {
           type: NotificationType.TENANT,
           entityId: tenant.id,
           entityType: EntityType.TENANT,
-          actionUrl: `/dashboard/tenants?=selected${tenant.id}`,
+          actionUrl: `/dashboard/tenants?selected=${tenant.id}`,
         })
       )
     );
@@ -409,7 +409,7 @@ export async function importTenantsFromCSV(formData: FormData) {
               type: NotificationType.TENANT,
               entityId: tenant.id,
               entityType: EntityType.TENANT,
-              actionUrl: `/dashboard/tenants?=selected${tenant.id}`,
+              actionUrl: `/dashboard/tenants?selected=${tenant.id}`,
             })
           )
         ])
