@@ -29,29 +29,9 @@ const navigation = [
     icon: DashboardIcon,
   },
   {
-    name: "Properties",
-    href: "/dashboard/properties",
-    icon: Building2,
-  },
-  {
-    name: "Space",
-    href: "/dashboard/spaces",
-    icon: LucideLandmark,
-  },
-  {
-    name: "Tenants",
-    href: "/dashboard/tenants",
-    icon: Users,
-  },
-  {
     name: "Projects",
     href: "/dashboard/projects",
     icon: FileText,
-  },
-  {
-    name: "Audit Logs",
-    href: "/dashboard/audit-logs",
-    icon: Notebook,
   },
   {
     name: "Settings",

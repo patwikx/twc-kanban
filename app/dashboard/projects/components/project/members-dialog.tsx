@@ -183,9 +183,6 @@ export function MembersDialog({
                           <span>
                             {user.firstName} {user.lastName}
                           </span>
-                          <span className="text-muted-foreground">
-                            ({user.email})
-                          </span>
                         </div>
                       </SelectItem>
                     ))}
