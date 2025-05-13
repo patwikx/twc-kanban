@@ -29,11 +29,6 @@ const navigation = [
     icon: DashboardIcon,
   },
   {
-    name: "Projects",
-    href: "/dashboard/projects",
-    icon: FileText,
-  },
-  {
     name: "Settings",
     href: "/dashboard/settings",
     icon: Settings,
