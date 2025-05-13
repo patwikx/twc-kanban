@@ -9,6 +9,7 @@ export const getProperties = cache(async () => {
       documents: true,
       utilities: true,
       propertyTaxes: true,
+      titleMovements: true,
     },
   });
 });

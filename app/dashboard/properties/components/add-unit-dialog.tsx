@@ -130,7 +130,7 @@ export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
                 <FormItem>
                   <FormLabel>Space Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter unit number" {...field} />
+                    <Input placeholder="Enter space number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -266,7 +266,7 @@ export function AddUnitDialog({ propertyId }: AddUnitDialogProps) {
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Unit"}
+                {isSubmitting ? "Creating..." : "Create Space"}
               </Button>
             </div>
           </form>

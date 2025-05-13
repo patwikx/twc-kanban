@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { OccupancyTrendChart } from '@/components/occupancy-trend-chart'
 
 // Server Actions
 async function getOverviewStats() {
@@ -158,6 +159,50 @@ async function getRevenueMetrics() {
   }
 }
 
+async function getOccupancyTrends() {
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    return date;
+  }).reverse();
+
+  const occupancyData = await Promise.all(
+    months.map(async (date) => {
+      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+      const [occupiedUnits, vacantUnits] = await Promise.all([
+        // Get occupied units count
+        prisma.unit.count({
+          where: {
+            status: 'OCCUPIED',
+            createdAt: {
+              lte: endOfMonth
+            }
+          }
+        }),
+        // Get vacant units count
+        prisma.unit.count({
+          where: {
+            status: 'VACANT',
+            createdAt: {
+              lte: endOfMonth
+            }
+          }
+        })
+      ]);
+
+      return {
+        month: date.toLocaleString('default', { month: 'short' }),
+        occupied: occupiedUnits,
+        vacant: vacantUnits,
+        total: occupiedUnits + vacantUnits
+      };
+    })
+  );
+
+  return occupancyData;
+}
+
 function StatCard({ 
   title, 
   value, 
@@ -250,6 +295,7 @@ function MaintenanceRequestTable({ requests }: { requests: any[] }) {
 export default async function DashboardPage() {
   const stats = await getOverviewStats()
   const revenue = await getRevenueMetrics()
+  const occupancyTrends = await getOccupancyTrends()
   
   const revenueChange = revenue.currentMonthRevenue > revenue.lastMonthRevenue
   const revenueChangePercentage = revenue.lastMonthRevenue 
@@ -328,19 +374,14 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent Maintenance Requests */}
-      <Card className="col-span-4">
-        <CardHeader>
-          <CardTitle>Recent Maintenance Requests</CardTitle>
-          <CardDescription>
-            Latest maintenance requests across all properties
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<div>Loading...</div>}>
-            <MaintenanceRequestTable requests={stats.recentMaintenanceRequests} />
-          </Suspense>
-        </CardContent>
-      </Card>
+      <OccupancyTrendChart 
+        data={occupancyTrends.map(trend => ({
+          month: trend.month,
+          total: trend.total,
+          occupied: trend.occupied,
+          vacant: trend.total - trend.occupied
+        }))}
+      />
     </div>
   )
 }

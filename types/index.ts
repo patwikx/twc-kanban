@@ -13,7 +13,8 @@ import {
   Payment,
   User,
   AuditLog,
-  Notification
+  Notification,
+  TitleMovementStatus
 } from "@prisma/client";
 
 export type PropertyWithRelations = Property & {
@@ -21,6 +22,19 @@ export type PropertyWithRelations = Property & {
   documents: Document[];
   utilities: PropertyUtility[];
   propertyTaxes: PropertyTax[];
+  titleMovements: {
+    id: string;
+    propertyId: string;
+    requestedBy: string;
+    status: TitleMovementStatus;
+    location: string;
+    purpose: string;
+    remarks: string | null;
+    requestDate: Date;
+    returnDate: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
 };
 
 export type UnitWithRelations = Unit & {

@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Trash, Plus, Download, FileText, Building2, Droplets, Power, Wifi, Eye, Receipt, Calendar, MapPin, User } from "lucide-react";
+import { Edit, Trash, Plus, Download, FileText, Building2, Droplets, Power, Wifi, Eye, Receipt, Calendar, MapPin, User, Loader2, ArrowUpDown } from 'lucide-react';
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PropertyType, UtilityType } from "@prisma/client";
+import { PropertyType, UtilityType, TitleMovementStatus } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -51,7 +51,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
+import { TitleMovementDialog } from "./title-movement-dialog";
+import { UpdateTitleStatusDialog } from "./update-title-movement-dialog";
 
 interface PropertyDetailsProps {
   property: PropertyWithRelations;
@@ -61,49 +62,83 @@ interface PropertyDetailsProps {
 
 export function PropertyDetails({ property, currentUserId, users }: PropertyDetailsProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
   const router = useRouter();
 
-  const { execute: handleDelete, loading: isDeleting } = useAsync(
-    async () => {
-      await deleteProperty(property.id);
-      router.push("/dashboard/properties");
-    },
-    {
-      successMessage: "Property deleted successfully",
-    }
-  );
-
-  const { execute: handleUpdate, loading: isUpdating } = useAsync(
-    async (formData: FormData) => {
-      await updateProperty(property.id, formData);
-      setIsEditing(false);
-    },
-    {
-      successMessage: "Property updated successfully",
-    }
-  );
-
-  const handleTaxStatusChange = async (taxId: string, currentStatus: boolean) => {
+  const handleDelete = async () => {
     try {
-      await updatePropertyTaxStatus(taxId, !currentStatus);
-      toast.success("Tax status updated successfully");
-      router.refresh();
+      setIsDeleting(true);
+      await toast.promise(deleteProperty(property.id), {
+        loading: 'Deleting property...',
+        success: 'Property deleted successfully',
+        error: 'Failed to delete property'
+      });
+      router.push("/dashboard/properties");
     } catch (error) {
-      toast.error("Failed to update tax status");
+      // Error is handled by toast
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const { execute: handleUtilityStatusChange } = useAsync(
-    async (id: string, currentStatus: boolean) => {
-      try {
-        await updateUtilityStatus(id, !currentStatus);
-        toast.success("Utility status updated successfully");
-      } catch (error) {
-        toast.error("Failed to update utility status");
-      }
-    }
-  );
+  const handleUpdate = async (formData: FormData) => {
+    setPendingFormData(formData);
+  };
 
+  const handleConfirmUpdate = async () => {
+    if (!pendingFormData) return;
+    
+    try {
+      setIsUpdating(true);
+      await toast.promise(updateProperty(property.id, pendingFormData), {
+        loading: 'Updating property...',
+        success: () => {
+          setIsEditing(false);
+          setPendingFormData(null);
+          return 'Property updated successfully';
+        },
+        error: 'Failed to update property'
+      });
+    } catch (error) {
+      // Error is handled by toast
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleTaxStatusChange = async (taxId: string, currentStatus: boolean) => {
+    try {
+      await toast.promise(
+        updatePropertyTaxStatus(taxId, !currentStatus),
+        {
+          loading: 'Updating tax status...',
+          success: 'Tax status updated successfully',
+          error: 'Failed to update tax status'
+        }
+      );
+      router.refresh();
+    } catch (error) {
+      // Error is handled by toast
+    }
+  };
+
+  const handleUtilityStatusChange = async (id: string, currentStatus: boolean) => {
+    try {
+      await toast.promise(
+        updateUtilityStatus(id, !currentStatus),
+        {
+          loading: 'Updating utility status...',
+          success: 'Utility status updated successfully',
+          error: 'Failed to update utility status'
+        }
+      );
+      router.refresh();
+    } catch (error) {
+      // Error is handled by toast
+    }
+  };
 
   const totalUnitArea = property.units.reduce((sum, unit) => sum + Number(unit.unitArea), 0);
   const leasableArea = Number(property.leasableArea);
@@ -339,13 +374,45 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
                     type="button"
                     variant="outline"
                     onClick={() => setIsEditing(false)}
-                    disabled={isUpdating}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isUpdating}>
-                    {isUpdating ? "Saving..." : "Save Changes"}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        type="submit" 
+                        disabled={isUpdating}
+                        className="min-w-[100px]"
+                      >
+                        Save Changes
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action will update the property details. Are you sure you want to continue?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleConfirmUpdate}
+                          disabled={isUpdating}
+                          className="min-w-[100px] mt-2"
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            'Confirm Save'
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </form>
             </DialogContent>
@@ -369,9 +436,16 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
                 <AlertDialogAction 
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-red-600 hover:bg-red-700 min-w-[100px] mt-2"
                 >
-                  {isDeleting ? "Deleting..." : "Delete Property"}
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete Property'
+                  )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -386,7 +460,7 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
           <TabsTrigger value="taxes">Real Property Taxes ({property.propertyTaxes.length})</TabsTrigger>
           <TabsTrigger value="documents">Documents ({property.documents.length})</TabsTrigger>
           <TabsTrigger value="utilities">Utilities ({property.utilities.length})</TabsTrigger>
-
+          <TabsTrigger value="title">Title Movement ({property.utilities.length})</TabsTrigger>
 
         </TabsList>
 
@@ -908,6 +982,116 @@ export function PropertyDetails({ property, currentUserId, users }: PropertyDeta
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="title" className="space-y-4">
+  <div className="flex justify-between items-center">
+    <div>
+      <h3 className="text-lg font-semibold">Title Movements & Encumbrances</h3>
+      <p className="text-sm text-muted-foreground">
+        Track title movements and manage property encumbrances
+      </p>
+    </div>
+    <TitleMovementDialog propertyId={property.id} currentUserId={currentUserId} />
+  </div>
+
+  <Card>
+    <CardContent className="p-0">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Purpose</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Requested By</TableHead>
+            <TableHead>Return Date</TableHead>
+            <TableHead>Remarks</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {property.titleMovements.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                No title movements recorded
+              </TableCell>
+            </TableRow>
+          ) : (
+            property.titleMovements.map((movement) => (
+              <TableRow key={movement.id}>
+                <TableCell>{formatDate(movement.requestDate)}</TableCell>
+                <TableCell>{movement.location}</TableCell>
+                <TableCell>{movement.purpose}</TableCell>
+                <TableCell>
+                  <Badge variant={movement.status === 'RETURNED' ? 'default' : 'secondary'}>
+                    {movement.status.replace(/_/g, ' ')}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {users.find(user => user.id === movement.requestedBy)?.firstName || 'Unknown'}
+                </TableCell>
+                <TableCell>
+                  {movement.returnDate ? formatDate(movement.returnDate) : '-'}
+                </TableCell>
+                <TableCell>{movement.remarks || '-'}</TableCell>
+                <TableCell className="text-right">
+                  <UpdateTitleStatusDialog
+                    titleMovementId={movement.id}
+                    currentStatus={movement.status as TitleMovementStatus}
+                  />
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>Property Encumbrances</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Bank/Institution</Label>
+            <Input placeholder="e.g., Bank of Commerce" className="mt-1" />
+          </div>
+          <div>
+            <Label>Loan Amount</Label>
+            <Input type="number" placeholder="0.00" className="mt-1" />
+          </div>
+          <div>
+            <Label>Date</Label>
+            <Input type="date" className="mt-1" />
+          </div>
+          <Button className="mt-7">Add Encumbrance</Button>
+        </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Bank/Institution</TableHead>
+              <TableHead>Loan Amount</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                No encumbrances recorded
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
       </Tabs>
     </div>
   );

@@ -31,13 +31,15 @@ model User {
   tenant              Tenant?
 
   // Project Management Relations
-  ownedProjects    Project[]        @relation("ProjectOwner")
+  ownedProjects    Project[]               @relation("ProjectOwner")
   memberOfProjects ProjectMember[]
-  assignedTasks    Task[]           @relation("AssignedTasks")
-  createdTasks     Task[]           @relation("CreatedTasks")
+  assignedTasks    Task[]                  @relation("AssignedTasks")
+  createdTasks     Task[]                  @relation("CreatedTasks")
   taskComments     TaskComment[]
   taskAttachments  TaskAttachment[]
   taskActivities   TaskActivity[]
+  titleMovements   PropertyTitleMovement[] // New relation
+  // Property Management Relations
 
   // System Relations
   auditLogs     AuditLog[]
@@ -103,7 +105,7 @@ model ProjectMember {
   id        String      @id @default(cuid())
   projectId String
   userId    String
-  role      ProjectRole @default(MEMBER)
+  role      ProjectRole @default(PURCHASER)
   joinedAt  DateTime    @default(now())
 
   // Relations
@@ -235,11 +237,34 @@ model Property {
   updatedAt       DateTime     @updatedAt
 
   // Relations
-  createdBy     User              @relation("CreatedBy", fields: [createdById], references: [id])
-  units         Unit[]
-  documents     Document[]
-  propertyTaxes PropertyTax[]
-  utilities     PropertyUtility[]
+  createdBy      User                    @relation("CreatedBy", fields: [createdById], references: [id])
+  units          Unit[]
+  documents      Document[]
+  propertyTaxes  PropertyTax[]
+  utilities      PropertyUtility[]
+  titleMovements PropertyTitleMovement[] // New relation
+}
+
+// New model for tracking property title movements
+model PropertyTitleMovement {
+  id          String              @id @default(cuid())
+  propertyId  String
+  requestedBy String
+  status      TitleMovementStatus
+  location    String
+  purpose     String
+  remarks     String?
+  requestDate DateTime            @default(now())
+  returnDate  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [requestedBy], references: [id])
+
+  @@index([propertyId])
+  @@index([requestedBy])
 }
 
 model PropertyTax {
@@ -503,6 +528,13 @@ enum UserRole {
   MANAGER
   STAFF
   TENANT
+  TREASURY
+  PURCHASER
+  ACCTG
+  VIEWER
+  OWNER
+  STOCKROOM
+  MAINTENANCE
 }
 
 enum PropertyType {
@@ -600,7 +632,10 @@ enum ProjectStatus {
 enum ProjectRole {
   OWNER
   ADMIN
-  MEMBER
+  PURCHASER
+  ACCTG
+  TREASURY
+  STOCKROOM
   VIEWER
 }
 
@@ -684,4 +719,13 @@ enum NotificationPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+// Add new enum for title movement status
+enum TitleMovementStatus {
+  REQUESTED
+  RELEASED
+  RETURNED
+  IN_TRANSIT
+  LOST
 }

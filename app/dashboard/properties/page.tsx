@@ -8,13 +8,14 @@ import { PropertyListSkeleton } from "./components/property-list-skeleton";
 import { PropertyList } from "./components/property-list";
 import { getUsers } from "@/actions/get-users-property-tax";
 
-
 export const revalidate = 0;
 
 export default async function PropertiesPage() {
-  const properties = await getProperties();
-  const users = await getUsers();
-  const session = await auth();
+  const [properties, users, session] = await Promise.all([
+    getProperties(),
+    getUsers(),
+    auth()
+  ]);
 
   if (!session?.user) {
     return null; // Or handle unauthorized access
@@ -37,7 +38,7 @@ export default async function PropertiesPage() {
           <Button asChild>
             <Link href="/dashboard/properties/new">
               <Building2 className="mr-2 h-4 w-4" />
-              Add Property
+              Add New Property
             </Link>
           </Button>
         </div>
