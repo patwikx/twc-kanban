@@ -167,10 +167,12 @@ export const RegisterForm = () => {
                                 <SelectValue placeholder="Select role..." />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value={UserRole.STAFF}>User</SelectItem>
-                                <SelectItem value={UserRole.MANAGER}>Manager</SelectItem>
-                                <SelectItem value={UserRole.ADMIN}>Supervisor</SelectItem>
-                                <SelectItem value={UserRole.TENANT}>Tenant</SelectItem>
+                                <SelectItem value={UserRole.VIEWER}>VIEWER</SelectItem>
+                                <SelectItem value={UserRole.PURCHASER}>PURCHASER</SelectItem>
+                                <SelectItem value={UserRole.TREASURY}>TREASURY</SelectItem>
+                                <SelectItem value={UserRole.ACCTG}>Accounting</SelectItem>
+                                <SelectItem value={UserRole.OWNER}>OWNER</SelectItem>
+                                <SelectItem value={UserRole.ADMIN}>Administrator</SelectItem>
                               </SelectContent>
                             </Select>
                           )}
